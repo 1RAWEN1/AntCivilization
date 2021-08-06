@@ -1,11 +1,5 @@
 import greenfoot.*;  // (World, Actor, GreenfootImage, and Greenfoot)
 
-/**
- * The world where ants live.
- * 
- * @author Michael Kölling
- * @version 1.1
- */
 public class AntWorld extends World
 {
     public static final int SIZE = 620;
@@ -18,7 +12,8 @@ public class AntWorld extends World
     {
         super(SIZE, SIZE, 1);
         setPaintOrder(Ant.class, Pheromone.class, AntHill.class, Food.class);
-        setup2();
+        setup3();
+        createStones();
     }
 
     /**
@@ -73,5 +68,12 @@ public class AntWorld extends World
         addObject(new Food(), 339, 342);
         addObject(new Food(), 593, 340);
         addObject(new Food(), 487, 565);
+    }
+    
+    public void createStones(){
+        for(int i=0;i<Greenfoot.getRandomNumber(4);i++){
+            Stone st=new Stone();
+            addObject(st,Greenfoot.getRandomNumber(getWidth()),Greenfoot.getRandomNumber(getHeight()));
+        }
     }
 }

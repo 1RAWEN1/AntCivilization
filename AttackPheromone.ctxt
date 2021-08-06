@@ -1,0 +1,15 @@
+#BlueJ class context
+comment0.target=AttackPheromone
+comment0.text=\r\n\ Write\ a\ description\ of\ class\ AttackPheromone\ here.\r\n\ \r\n\ @author\ (your\ name)\ \r\n\ @version\ (a\ version\ number\ or\ a\ date)\r\n
+comment1.params=
+comment1.target=AttackPheromone()
+comment1.text=\r\n\ Create\ a\ new\ drop\ of\ pheromone\ with\ full\ intensity.\r\n
+comment2.params=intensity
+comment2.target=AttackPheromone(int)
+comment3.params=
+comment3.target=void\ act()
+comment3.text=\r\n\ The\ pheromone\ decreases\ the\ intensity.\ When\ the\ intensity\ reaches\ zero,\ it\ disappears.\r\n
+comment4.params=
+comment4.target=void\ updateImage()
+comment4.text=\r\n\ Make\ the\ image.\ The\ size\ and\ transparency\ are\ proportional\ to\ the\ intensity.\r\n
+numComments=5

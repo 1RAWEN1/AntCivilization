@@ -1,15 +1,5 @@
 import greenfoot.*;  // (World, Actor, GreenfootImage, Greenfoot and MouseInfo)
 
-/**
- * A creature in a simulation. The creature has a known home. It can move and head towards or away from home.
- * 
- * Movement of the creature is arranged by storing a deltaX/deltaY pair: the offsets in the x/y direction
- * that the creature will move in the next step. The value for these is capped by the SPEED constant: 
- * the delta values will always be in the range [-SPEED..SPEED].
- * 
- * @author Michael Kölling
- * @version 1.0
- */
 public class Creature  extends Actor
 {
     /** The maximum movement speed of the ant. */
@@ -69,7 +59,7 @@ public class Creature  extends Actor
             //if we do not have a home, we can not go there.
             return;
         }
-        if (randomChance(2)) {
+        if (false) {
             randomWalk();  // cannot always walk straight. 2% chance to turn off course.
         }
         else {
@@ -107,13 +97,40 @@ public class Creature  extends Actor
         deltaY = capSpeed(target.getY() - getY());
     }
     
+    private int cof=1;
+    public void updateCof(){
+        if(Greenfoot.getRandomNumber(2)==0){
+            cof=-1;
+        }
+    }
+    
+    public int RandomSpeed(){
+        return cof*SPEED;
+    }
     /**
      * Walk forward in the current direction with the current speed. 
      * (Does not change direction or speed.)
      */
+    private int startX;
+    private int startY;
     public void walk()
     {
-        setLocation(getX() + deltaX, getY() + deltaY);
+        startX=getX();
+        startY=getY();
+        
+        setLocation(startX + deltaX, startY);
+        if(getOneIntersectingObject(Stone.class)!=null){
+            deltaX=0;
+            deltaY=RandomSpeed();
+        }
+        else{
+            setLocation(startX,startY + deltaY);
+            if(getOneIntersectingObject(Stone.class)!=null){
+                deltaY=0;
+                deltaX=RandomSpeed();
+            }
+        }
+        setLocation(startX + deltaX,startY + deltaY);
         setRotation((int) (180 * Math.atan2(deltaY, deltaX) / Math.PI));
     }
 

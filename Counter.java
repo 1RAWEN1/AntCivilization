@@ -1,11 +1,5 @@
 import greenfoot.*;  // (World, Actor, GreenfootImage, and Greenfoot)
 
-/**
- * Counter that displays some taxt and a number.
- * 
- * @author Michael Kölling
- * @version 1.1
- */
 public class Counter extends Actor
 {
     private int value = 0;
@@ -29,14 +23,21 @@ public class Counter extends Actor
         setImage(new GreenfootImage(imageWidth, 16));
         updateImage();
     }
+    
+    public int getValue(){
+        return value;
+    }
+    
+    public void setValue(int value){
+        this.value=value;
+    }
 
     /**
      * Increment the counter value by one.
      */
     public void increment()
     {
-        value++;
-        updateImage();
+         updateImage();
     }
 
     /**

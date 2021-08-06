@@ -1,0 +1,15 @@
+#BlueJ class context
+comment0.target=Food
+comment1.params=
+comment1.target=Food()
+comment1.text=\r\n\ Create\ a\ pile\ of\ food\ with\ an\ image\ depicting\ the\ amount.\r\n
+comment2.params=
+comment2.target=void\ takeSome()
+comment2.text=\r\n\ Remove\ some\ food\ from\ this\ pile\ of\ food.\r\n
+comment3.params=
+comment3.target=void\ updateImage()
+comment3.text=\r\n\ Update\ the\ image\r\n
+comment4.params=
+comment4.target=int\ randomCoord()
+comment4.text=\r\n\ Returns\ a\ random\ number\ relative\ to\ the\ size\ of\ the\ food\ pile.\r\n
+numComments=5

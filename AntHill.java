@@ -1,13 +1,8 @@
 import greenfoot.*;  // (World, Actor, GreenfootImage, and Greenfoot)
  
-/**
- * A hill full of ants.
- * 
- * @author Michael Kölling
- * @version 1.1
- */
 public class AntHill extends Actor
 {
+    private int fullValueOfAnts = 10;
     /** Number of ants that have come out so far. */
     private int ants = 0;
     
@@ -16,6 +11,8 @@ public class AntHill extends Actor
 
     /** Counter to show how much food have been collected so far. */
     private Counter foodCounter;
+    
+    private int food;
     
     /**
      * Constructor for ant hill with default number of ants (40).
@@ -37,13 +34,18 @@ public class AntHill extends Actor
      */
     public void act()
     {
-        if(ants < maxAnts) 
+        if(ants<fullValueOfAnts) 
         {
             if(Greenfoot.getRandomNumber(100) < 10) 
             {
                 getWorld().addObject(new Ant(this), getX(), getY());
                 ants++;
             }
+        }
+        
+        if(food>=3 && fullValueOfAnts<maxAnts){
+            food-=3;
+            fullValueOfAnts++;
         }
     }
 
@@ -59,7 +61,9 @@ public class AntHill extends Actor
             int y = getY() + getImage().getWidth()/2 + 8;
 
             getWorld().addObject(foodCounter, x, y);
-        }        
+        }     
+        food++;
+        foodCounter.setValue(food);
         foodCounter.increment();
     }
 }

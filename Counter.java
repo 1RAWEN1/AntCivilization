@@ -31,11 +31,15 @@ public class Counter extends Actor
     public void setValue(int value){
         this.value=value;
     }
+    
+    public void countAnts(int secondValue){
+        updateImage1(secondValue);
+    }
 
     /**
      * Increment the counter value by one.
      */
-    public void increment()
+    public void draw()
     {
          updateImage();
     }
@@ -48,5 +52,12 @@ public class Counter extends Actor
         GreenfootImage image = getImage();
         image.clear();
         image.drawString(text + value, 1, 12);
+    }
+    
+    private void updateImage1(int secondValue)
+    {
+        GreenfootImage image = getImage();
+        image.clear();
+        image.drawString(text + value+"(" + secondValue + ")", 1, 12);
     }
 }

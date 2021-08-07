@@ -59,8 +59,8 @@ public class Creature  extends Actor
             //if we do not have a home, we can not go there.
             return;
         }
-        if (false) {
-            randomWalk();  // cannot always walk straight. 2% chance to turn off course.
+        if (randomChance(70) && !intersects(home)) {
+            randomWalk();  // cannot always walk straight. 70% chance to turn off course.
         }
         else {
             headRoughlyTowards(home);
@@ -77,8 +77,8 @@ public class Creature  extends Actor
             //if we do not have a home, we can not head away from it.
             return;
         }
-        if (randomChance(2)) {
-            randomWalk();  // cannot always walk straight. 2% chance to turn off course.
+        if (randomChance(70)) {
+            randomWalk();  // cannot always walk straight. 70% chance to turn off course.
         }
         else {
             headRoughlyTowards(home);   // first head towards home...
@@ -95,6 +95,17 @@ public class Creature  extends Actor
     {
         deltaX = capSpeed(target.getX() - getX());
         deltaY = capSpeed(target.getY() - getY());
+    }
+    
+    public void setCof(int cof){
+        this.cof=cof;
+    }
+    
+    public void turnTowards(Actor target){
+        deltaX = capSpeed(target.getX() - getX());
+        deltaY = capSpeed(target.getY() - getY());
+        
+        setRotation((int) (180 * Math.atan2(deltaY, deltaX) / Math.PI));
     }
     
     private int cof=1;
@@ -130,8 +141,13 @@ public class Creature  extends Actor
                 deltaX=RandomSpeed();
             }
         }
+        
         setLocation(startX + deltaX,startY + deltaY);
         setRotation((int) (180 * Math.atan2(deltaY, deltaX) / Math.PI));
+        
+        if(isAtEdge()){
+            setCof(cof * -1);
+        }
     }
 
     /**

@@ -13,6 +13,7 @@ public class Food extends Actor
     private static final Random randomizer = new Random();
     
     private int crumbs = 100;  // number of bits of food in this pile
+    static final int MAX_CRUMBS=100;
 
     /**
      * Create a pile of food with an image depicting the amount.
@@ -20,6 +21,27 @@ public class Food extends Actor
     public Food()
     {
         updateImage();
+    }
+    
+    public Food(int crumbs)
+    {
+        this.crumbs=crumbs;
+        updateImage();
+    }
+    
+    public void addedToWorld(){
+        if(getOneIntersectingObject(Stone.class)!=null){
+            getWorld().removeObject(this);
+        }
+    }
+    
+    public void addFood(){
+        crumbs+=3;
+        updateImage();
+    }
+    
+    public boolean crumbsIsMax(){
+        return crumbs>=MAX_CRUMBS;
     }
 
     /**

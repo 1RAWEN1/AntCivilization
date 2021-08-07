@@ -2,22 +2,22 @@ import greenfoot.*;  // (World, Actor, GreenfootImage, and Greenfoot)
 
 public class Pheromone extends Actor
 {
-    int MAX_INTENSITY = 180;
-    int intensity;
+    private int maxIntensity = 180;
+    private int intensity;
 
     /**
      * Create a new drop of pheromone with full intensity.
      */
     public Pheromone()
     {
-        intensity = MAX_INTENSITY;
+        intensity = maxIntensity;
         updateImage();
     }
     
     public Pheromone(int intensity)
     {
         this.intensity = intensity;
-        MAX_INTENSITY = this.intensity;
+        maxIntensity = this.intensity;
         updateImage();
     }
 
@@ -35,6 +35,14 @@ public class Pheromone extends Actor
                 updateImage();
             }
         }
+    }
+    
+    public int getIntensity(){
+        return intensity;
+    }
+    
+    public int getMaxIntensity(){
+        return maxIntensity;
     }
 
     /**

@@ -49,7 +49,7 @@ public class AttackPheromone extends Actor
     {
         int size = intensity / 3 + 5;
         GreenfootImage image = new GreenfootImage(size + 1, size + 1);
-        int alpha = intensity / 3;
+        int alpha = intensity / 6;
         image.setColor(new Color(0, 100, 255, alpha));
         image.fillOval(0, 0, size, size);
         image.setColor(Color.DARK_GRAY);

@@ -1,16 +1,9 @@
-        Ants
-        ====
-        Version 3
+       AntWars
+====
+Version 3
         
-This scenario is part of the book 
+Author: RAVEN
 
-    "Introduction to Programming with Greenfoot"
-    by Michael Kšlling
-    ISBN: 0-13-603753-4
-
-This scenario is discussed in detail in that book.
-
-Copyright (c) Michael Kšlling.
-
-Permission is granted to use this code in any way you like (modification,
-copying, distribution).
+This simulation shows the life of an ant colony. Ants in a colony have different professions and perform different functions. 
+They use pheromones to communicate, which helps them work in a coordinated manner. Also in the simulation, you can watch the 
+struggle of different colonies for survival.

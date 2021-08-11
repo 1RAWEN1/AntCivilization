@@ -236,6 +236,9 @@ public class AntWorld extends World
                 newWorld();
             }
         }
+        else{
+            winLabel.setValue("");
+        }
         /*if(newFood!=null && newFood.getWorld()==null){
         newFood=null;
         }

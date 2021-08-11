@@ -15,6 +15,9 @@ public class Egg extends Live
     private SimpleTimer t=new SimpleTimer();
     private int profession=0;
     private int food = 0;
+    
+    private int x;
+    private int y;
     public Egg(int prof, AntHill home){
         setHomeHill(home);
         profession=prof;
@@ -73,8 +76,28 @@ public class Egg extends Live
                 getWorld().removeObject(this);
             }
         }
-        else if(isTouching(Block.class)){
-            getWorld().removeObject(this);
+        else if(isTouching(UndergroundObs.class)){
+            x=getX();
+            y=getY();
+            for(int i=0;i<4;i++){
+                setLocation(x+(int)Math.cos(Math.toRadians(i*90)),y+(int)Math.sin(Math.toRadians(i*90)));
+                if(!isTouching(UndergroundObs.class)){
+                    break;
+                }
+            }
+            /*setLocation(getX()+1,getY());
+            if(isTouching(Block.class)){
+                setLocation(getX()-2,getY());
+                if(isTouching(Block.class)){
+                    setLocation(getX()+1, getY()+1);
+                    if(isTouching(Block.class)){
+                        setLocation(getX(), getY()-2);
+                        if(isTouching(Block.class)){
+                            getWorld().removeObject(this);
+                        }
+                    }
+                }
+            }*/
         }
         else{
             die1();

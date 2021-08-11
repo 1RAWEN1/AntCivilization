@@ -79,7 +79,7 @@ public class QueenAnt extends Creature
     }
     
     private void die(){
-        if(hp<0 || food<0){
+        if(hp<=0 || food<=0){
             getHomeHill().queenDead();
             getWorld().removeObject(this);
         }

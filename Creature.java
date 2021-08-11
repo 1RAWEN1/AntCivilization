@@ -200,12 +200,12 @@ public class Creature  extends Live
     
     public void walk(){
         if(summ==0 && runPurposefully==0 || target!=null && intersects(target)){
+            if(target!=null && intersects(target)){
+                atTarget();
+            }
             walk1();
             if(target!=null && target.getWorld()==null){
                 target=null;
-            }
-            if(target!=null && getX()==target.getX() && getY()==target.getY()){
-                atTarget();
             }
         }
         else if(summ!=0 || runPurposefully>0){
@@ -256,7 +256,7 @@ public class Creature  extends Live
             
             if(getOneIntersectingObject(UndergroundObs.class)!=null){
                 deltaX=0;
-                deltaY=randomSpeed();
+                deltaY=needSpeed(deltaY);
                 touchObs=true;
             }
             
@@ -264,7 +264,7 @@ public class Creature  extends Live
             if(getOneIntersectingObject(UndergroundObs.class)!=null){
                 deltaY=0;
                 if(!touchObs){
-                    deltaX=randomSpeed();
+                    deltaX=needSpeed(deltaX);
                 }
                 touchObs=true;
             }

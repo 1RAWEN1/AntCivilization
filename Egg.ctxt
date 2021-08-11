@@ -1,0 +1,14 @@
+#BlueJ class context
+comment0.target=Egg
+comment0.text=\r\n\ Write\ a\ description\ of\ class\ Egg\ here.\r\n\ \r\n\ @author\ (your\ name)\ \r\n\ @version\ (a\ version\ number\ or\ a\ date)\r\n
+comment1.params=prof\ home
+comment1.target=Egg(int,\ AntHill)
+comment2.params=
+comment2.target=int\ getFood()
+comment3.params=
+comment3.target=void\ countFood()
+comment4.params=
+comment4.target=void\ updateImage()
+comment5.params=
+comment5.target=void\ act()
+numComments=6

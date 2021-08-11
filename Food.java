@@ -12,8 +12,8 @@ public class Food extends Actor
 
     private static final Random randomizer = new Random();
     
-    private int crumbs = 100;  // number of bits of food in this pile
-    static final int MAX_CRUMBS=100;
+    private int crumbs = 30;  // number of bits of food in this pile
+    static final int MAX_CRUMBS=30;
 
     /**
      * Create a pile of food with an image depicting the amount.
@@ -36,7 +36,7 @@ public class Food extends Actor
     }
     
     public void addFood(){
-        crumbs+=3;
+        crumbs++;
         updateImage();
     }
     
@@ -49,7 +49,7 @@ public class Food extends Actor
      */
     public void takeSome()
     {
-        crumbs = crumbs - 3;
+        crumbs--;
         if (crumbs <= 0) {
             getWorld().removeObject(this);
         }

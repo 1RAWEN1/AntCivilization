@@ -4,7 +4,7 @@ public class Pheromone extends Actor
 {
     private int maxIntensity = 180;
     private int intensity;
-
+    
     /**
      * Create a new drop of pheromone with full intensity.
      */

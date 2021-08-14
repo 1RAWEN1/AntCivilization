@@ -17,8 +17,6 @@ public class AntWorld extends World
         AntHill.teams=0;
         setPaintOrder(Label.class, Scroller.class, QueenAnt.class, Egg.class, Ant.class, TakenFood.class, Pheromone.class, AttackPheromone.class, AntHill.class, Food.class, Stone.class, Block.class);
         newWorld();
-        createStones();
-        createWinLabel();
     }
     
     private void newWorld(){
@@ -44,6 +42,8 @@ public class AntWorld extends World
         else if(rand==6){
             setup6();
         }
+        createStones();
+        createWinLabel();
     }
 
     /**
@@ -169,7 +169,7 @@ public class AntWorld extends World
         winLabel=new Label("",30);
         addObject(winLabel, SIZE/2, SIZE/2);
         
-        sc=new Scroller(50);
+        sc=new Scroller(speed);
         addObject(sc,110,20);
     }
 
@@ -197,6 +197,9 @@ public class AntWorld extends World
             ah.setChanceToWin((double)ah.getSolNumber()/fullSoldiers);
         }
     }
+    private int antsInWorld = 0;
+    
+    private static int speed = 50;
     public void act(){
         if(Greenfoot.getRandomNumber(200)==1){
             newFood=new Food((Greenfoot.getRandomNumber(Food.MAX_CRUMBS/3)+1)*3);
@@ -204,16 +207,22 @@ public class AntWorld extends World
             newFood.addedToWorld();
         }
         
+        antsInWorld = 0;
         winTeam=-1;
         analysis();
         for(int i=0;i<homeArray.size();i++){
-             if(winTeam==-1 && homeArray.get(i).getAntNumber()>0 || homeArray.get(i).fully()){
+            antsInWorld += homeArray.get(i).getAntNumber();
+            if(winTeam==-1 && homeArray.get(i).getAntNumber()>0 || homeArray.get(i).fully()){
                 winTeam=homeArray.get(i).getTeam();
             }
             else if(homeArray.get(i).getTeam()!=winTeam && homeArray.get(i).getAntNumber()>0){
                 winTeam=-1;
                 break;
             }
+        }
+        
+        if(antsInWorld==0){
+            winTeam=0;
         }
         
         if(winTeam!=-1){
@@ -230,7 +239,12 @@ public class AntWorld extends World
                 winLabel.setFillColor(Color.GREEN);
             }
             
-            winLabel.setValue("WINNER!");
+            if(winTeam!=0){
+                winLabel.setValue("WINNER!");
+            }
+            else{
+                winLabel.setValue("DRAWN!");
+            }
             winTimer.calculate();
             if(winTimer.getTime()>250){
                 newWorld();
@@ -248,8 +262,9 @@ public class AntWorld extends World
         newFood=null;
         }
         }*/
-        if(sc.getValue()>30){
-            Greenfoot.setSpeed(sc.getValue());
+        speed = sc.getValue();
+        if(speed>30){
+            Greenfoot.setSpeed(speed);
         }
     }
 }

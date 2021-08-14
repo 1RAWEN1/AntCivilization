@@ -1,3 +1,5 @@
+ 
+
 import greenfoot.*;  // (World, Actor, GreenfootImage, and Greenfoot)
 import java.util.ArrayList;
 
@@ -224,9 +226,14 @@ public class Ant extends Creature
      */
     private void checkHome()
     {
-        Warehouse wr=(Warehouse)getOneIntersectingObject(Warehouse.class);
-        if (wr!=null) {
-            wr.addFood();
+        if(touchingBlock!=null && touchingBlock.getWorld()!=null){
+            turnTowards(touchingBlock);
+        }
+        if (touchingBlock!=null && !touchingBlock.canDig(this)
+        && Math.sqrt(Math.pow(getX()-getHomeHill().getX(),2)+Math.pow(getY()-getHomeHill().getY(),2))>radius) {
+            dropFood();
+        }
+        else if(tf.getWorld()==null){
             dropFood();
         }
     }
@@ -256,33 +263,29 @@ public class Ant extends Creature
 
     }
     
-    private Actor target;
+    private Actor myTarget;
     private void inHome(){
-        if(target==null){
-            target=getHomeHill();
+        if(myTarget==null){
+            myTarget=getHomeHill();
         }
-        if(foodNotFully() && getHomeHill().getFood()!=0){
-            for(int i=0;i<getObjectsInRange(radius,Warehouse.class).size();i++){
-                if(getObjectsInRange(radius,Warehouse.class).get(i).notEmpty()){
-                    target=getObjectsInRange(radius,Warehouse.class).get(i);
-                    break;
-                }
-            }
+        if(foodNotFully() && getHomeHill().getFood()!=0 && getObjectsInRange(radius,TakenFood.class).size()>0){
+            myTarget=getObjectsInRange(radius,TakenFood.class).get(0);
         }
         else{
-            target=getHomeHill();
+            myTarget=getHomeHill();
         }
         if(carryingFood){
-            for(int i=0;i<getObjectsInRange(radius, Warehouse.class).size();i++){
-                if(!getObjectsInRange(radius, Warehouse.class).get(i).isFully()){
-                    target=getObjectsInRange(radius, Warehouse.class).get(i);
-                    break;
-                }
+            /*if(getObjectsInRange(radius,TakenFood.class).size()>0){
+                myTarget=getObjectsInRange(radius,TakenFood.class).get(0);
             }
+            else{*/
+                myTarget=null;
+                randomWalk();
+            //}
         }
         if(profession==2){
             if(seeEnemy()){
-                target=enemy;
+                myTarget=enemy;
                 attack();
                 turnTowards(enemy);
             }
@@ -296,12 +299,16 @@ public class Ant extends Creature
             }
         }
         
-        if(target!=null && target.getWorld()==null){
-            target=null;
+        if(myTarget!=null && myTarget.getWorld()==null){
+            myTarget=null;
         }
         
-        if(target!=null && target.getWorld()!=null){
-            headTowards(target);
+        if(touchingBlock!=null && touchingBlock.getWorld()!=null && touchingBlock.canDig(this)){
+            myTarget=touchingBlock;
+        }
+        
+        if(myTarget!=null){
+            headTowards(myTarget);
             walk();
         }
         /*if((getX()-getHomeHill().getX())%20>0 && (getX()-getHomeHill().getX())%20<SPEED
@@ -321,9 +328,9 @@ public class Ant extends Creature
     }
     
     public void eat1(){
-        Warehouse wh=(Warehouse)getOneIntersectingObject(Warehouse.class);
-        if(wh!=null && wh.notEmpty() && foodNotFully()){
-            wh.takeSome();
+        TakenFood tf=(TakenFood)getOneIntersectingObject(TakenFood.class);
+        if(tf!=null && foodNotFully()){
+            tf.eat();
             eat();
         }
     }
@@ -355,7 +362,7 @@ public class Ant extends Creature
         carryingFood = true;
         food.takeSome();
         
-        tf=new TakenFood();
+        tf=new TakenFood(getHomeHill());
         getWorld().addObject(tf,getX(),getY());
         take(tf);
     }
@@ -375,8 +382,7 @@ public class Ant extends Creature
             level++;
         }
         lastPh=null;
-        remove();
-        tf=null;
+        put();
         /*GreenfootImage im=new GreenfootImage(getImage().getWidth()+2,getImage().getHeight());
         im.drawImage(new GreenfootImage("takenFood.png"),0,(im.getHeight()/2)-1);
         im.drawImage(getImage(),2,0);
@@ -454,7 +460,9 @@ public class Ant extends Creature
     
     private final int MAX_SHOT=3;
     private void updateAnimation(){
-        animation++;
+        if(moved()){
+            animation++;
+        }
         if(animation>=step){
             animation=0;
             shot++;
@@ -536,7 +544,7 @@ public class Ant extends Creature
     
     private void die(){
         if(food<=0 || hp<=0){
-            if(tf!=null){
+            if(tf!=null && tf.getWorld()!=null){
                 getWorld().addObject(new Food(1),tf.getX(),tf.getY());
                 getWorld().removeObject(tf);
             }

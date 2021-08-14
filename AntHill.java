@@ -62,10 +62,13 @@ public class AntHill extends Actor
     
     private final int BLOCK_SIZE=20;
     public void createUnderground(){
+        // || Math.abs(4-x)+Math.abs(4-y)==1
+        //        || 4>Math.abs(4-y) && Math.abs(4-y)>1 && Math.abs(4-x)<=1 || 4>Math.abs(4-x) && Math.abs(4-x)>1 && Math.abs(4-y)<=1
+        
+        //Math.abs(4-x)+Math.abs(4-y)>6 || 
         for(int x=0;x<9;x++){
             for(int y=0;y<9;y++){
-                if(Math.abs(4-x)+Math.abs(4-y)>6 || 4-x==0 && 4-y==0 || Math.abs(4-x)+Math.abs(4-y)==1
-                || 4>Math.abs(4-y) && Math.abs(4-y)>1 && Math.abs(4-x)<=1 || 4>Math.abs(4-x) && Math.abs(4-x)>1 && Math.abs(4-y)<=1){
+                if(Math.abs(4-x)+Math.abs(4-y)>6 || 4-x==0 && 4-y==0){
                     
                 }
                 else{
@@ -74,11 +77,11 @@ public class AntHill extends Actor
             }
         }
         
-        getWorld().addObject(new Warehouse(this), getX(), getY()+50);
-        getWorld().addObject(new Warehouse(this), getX()+50, getY());
-        getWorld().addObject(new Warehouse(this), getX()-50, getY());
+        //getWorld().addObject(new Warehouse(this), getX(), getY()+50);
+        //getWorld().addObject(new Warehouse(this), getX()+50, getY());
+        //getWorld().addObject(new Warehouse(this), getX()-50, getY());
         
-        getWorld().addObject(new QueenAnt(this),getX()-20,getY()-55);
+        getWorld().addObject(new QueenAnt(this),getX(),getY());
         
         for(int i=0;i<fullNumberOfAnts;i++){
             //getWorld().addObject(new Ant(this),getX()-20,getY()-55);
@@ -92,7 +95,7 @@ public class AntHill extends Actor
         if(ant.getProfession()==2){
             newSoldier();
         } 
-        getWorld().addObject(ant ,getX()-20,getY()-55);
+        getWorld().addObject(ant ,getX(),getY());
     }
     
     public void newAnt(Ant ant){

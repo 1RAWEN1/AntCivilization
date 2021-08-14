@@ -31,12 +31,13 @@ public class Creature  extends Live
     public void carry(){
         if(takenObject!=null){
             takenObject.setRotation(getRotation());
-            takenObject.setLocation(getX()+(int)((getImage().getWidth()/2)*Math.cos(Math.toRadians(getRotation())))
-            , getY()+(int)((getImage().getWidth()/2)*Math.sin(Math.toRadians(getRotation()))));
+            takenObject.setLocation(getX()+(int)((1 + getImage().getWidth()/2)*Math.cos(Math.toRadians(getRotation())))
+            , getY()+(int)((1 + getImage().getWidth()/2)*Math.sin(Math.toRadians(getRotation()))));
         }
     }
     
     public void put(){
+        takenObject.setLocation(getX(),getY());
         takenObject=null;
     }
     
@@ -98,6 +99,9 @@ public class Creature  extends Live
         }
     }
 
+    public boolean moved(){
+        return deltaX!=0 || deltaY!=0;
+    }
     /**
      * Adjust the walking direction to head towards the given co-ordinates.
      */
@@ -118,10 +122,7 @@ public class Creature  extends Live
         this.cof=cof;
     }
     public void turnTowards(Actor target){
-        deltaX = capSpeed(target.getX() - getX());
-        deltaY = capSpeed(target.getY() - getY());
-        
-        setRotation((int) (180 * Math.atan2(deltaY, deltaX) / Math.PI));
+        turnTowards(target.getX(),target.getY());
     }
     
     private int cof=1;
@@ -142,6 +143,12 @@ public class Creature  extends Live
     private int randomSpeed(){
         return cof*SPEED;
     }
+    
+    public void moveInHome(){
+        moveInHome1();
+        atTarget();
+    }
+    
     
     /**
      * Walk forward in the current direction with the current speed. 
@@ -199,26 +206,30 @@ public class Creature  extends Live
     }
     
     public void walk(){
-        if(summ==0 && runPurposefully==0 || target!=null && intersects(target)){
-            if(target!=null && intersects(target)){
-                atTarget();
-            }
-            walk1();
-            if(target!=null && target.getWorld()==null){
-                target=null;
-            }
+        
+        if(target!=null && target.getWorld()==null){
+            target=null;
         }
-        else if(summ!=0 || runPurposefully>0){
-            if(target!=null && target.getWorld()==null){
-                target=null;
+        //try{
+            if(summ==0 && runPurposefully==0 || target!=null && intersects(target)){
+                if(target!=null && intersects(target)){
+                    atTarget();
+                }
+                walk1();
             }
-            
-            if(target!=null && !intersects(target)){
-                turnInHome();
+            else if(summ!=0 || runPurposefully>0){
+                if(target!=null && target.getWorld()==null){
+                    target=null;
+                }
+                
+                if(target!=null && !intersects(target) || summ!=0 || runPurposefully>0){
+                    turnInHome();
+                }
             }
-        }
+        //}catch(Exception e){System.out.println(target+" "+target.getWorld());Greenfoot.stop();}
     }
     
+    Block touchingBlock;
     public void walk1()
     {
         startX=getX();
@@ -252,31 +263,36 @@ public class Creature  extends Live
             }
         }
         else{
-            touchObs=false;
-            
-            if(getOneIntersectingObject(UndergroundObs.class)!=null){
+            touchingBlock=null;
+            if(isTouching(UndergroundObs.class)){
                 deltaX=0;
                 deltaY=needSpeed(deltaY);
-                touchObs=true;
+                touchingBlock=(Block)getOneIntersectingObject(Block.class);
             }
             
             setLocation(startX+deltaX,startY + deltaY);
-            if(getOneIntersectingObject(UndergroundObs.class)!=null){
+            if(isTouching(UndergroundObs.class)){
                 deltaY=0;
-                if(!touchObs){
+                if(touchingBlock==null){
                     deltaX=needSpeed(deltaX);
+                    touchingBlock=(Block)getOneIntersectingObject(Block.class);
                 }
-                touchObs=true;
             }
             
-            if(touchObs){
-                turnRandom();
+            if(touchingBlock!=null){
+                //turnTowards(touchingBlock);
+                if(touchingBlock.canDig(this)){
+                    touchingBlock.dig(this);
+                }
+                else{
+                    turnRandom();
+                }
             }
         }
         
         setLocation(startX + deltaX,startY + deltaY);
         
-        /*if(isUnderGround() && isTouching(UndergroundObs.class)){
+        if(isUnderGround() && isTouching(UndergroundObs.class)){
             deltaX=0;
             deltaY=0;
             setLocation(startX,startY);
@@ -286,12 +302,16 @@ public class Creature  extends Live
             deltaX=0;
             deltaY=0;
             setLocation(startX,startY);
-        }*/
+        }
         if(deltaX==0 && deltaY==0){
             setRotation(rot);
         }
         else{
             setRotation((int) (180 * Math.atan2(deltaY, deltaX) / Math.PI));
+        }
+        
+        if(touchingBlock!=null && touchingBlock.getWorld()!=null && touchingBlock.canDig(this)){
+            turnTowards(touchingBlock);
         }
         
         if(isAtEdge()){

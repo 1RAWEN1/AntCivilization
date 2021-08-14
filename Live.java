@@ -87,11 +87,10 @@ public class Live extends Actor
     public boolean isUnderGround(){
         return underGround;
     }
-    
-    public void moveInHome(){
+    public void moveInHome1(){
         underGround=!underGround;
     }
-
+    
     public void act() 
     {
         // Add your action code here.

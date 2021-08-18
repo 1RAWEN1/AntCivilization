@@ -4,7 +4,7 @@ import java.util.ArrayList;
 //renamed
 public class Ant extends Creature
 {
-    private boolean carryingFood = false;
+    private boolean isCarryingFood = false;
 
     private final int viewingRadius = 50;
     
@@ -52,7 +52,7 @@ public class Ant extends Creature
         dTimer.calculate();
         if(!isUnderGround()){
             if(profession == 1){
-                if (carryingFood) {
+                if (isCarryingFood) {
                     walkTowardsHome();
                     handlePheromoneDrop();
                     carry();
@@ -262,7 +262,7 @@ public class Ant extends Creature
         else{
             myTarget=getHomeHill();
         }
-        if(carryingFood){
+        if(isCarryingFood){
             /*if(getObjectsInRange(radius,TakenFood.class).size()>0){
                 myTarget=getObjectsInRange(radius,TakenFood.class).get(0);
             }
@@ -300,7 +300,7 @@ public class Ant extends Creature
             purposefulWalk();
         }
         
-        if(carryingFood){
+        if(isCarryingFood){
             if(tf!=null){
                 carry();
                 tf.getImage().setTransparency(getImage().getTransparency());
@@ -326,7 +326,7 @@ public class Ant extends Creature
             if(foodNotFully()){
                 eatFood(food);
             }
-            if (profession==1 && food.getWorld()!=null && !carryingFood) {
+            if (profession==1 && food.getWorld()!=null && !isCarryingFood) {
                 takeFood(food);
     
             }
@@ -337,7 +337,7 @@ public class Ant extends Creature
     private final int startPheromoneValue=60;
     private void takeFood(Food food)
     {
-        carryingFood = true;
+        isCarryingFood = true;
         food.takeSome();
         
         tf=new TakenFood(getHomeHill());
@@ -352,7 +352,7 @@ public class Ant extends Creature
 
     private void dropFood()
     {
-        carryingFood = false;
+        isCarryingFood = false;
         if(level<MAX_LEVEL){
             level++;
         }

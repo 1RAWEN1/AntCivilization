@@ -1,0 +1,19 @@
+#BlueJ class context
+comment0.target=Food
+comment1.params=
+comment1.target=Food()
+comment2.params=crumbs
+comment2.target=Food(int)
+comment3.params=
+comment3.target=void\ removeIfTouchingStone()
+comment4.params=
+comment4.target=void\ addFood()
+comment5.params=
+comment5.target=boolean\ isCrumbsMax()
+comment6.params=
+comment6.target=void\ takeSome()
+comment7.params=
+comment7.target=void\ updateImage()
+comment8.params=
+comment8.target=int\ randomCoordOfFood()
+numComments=9

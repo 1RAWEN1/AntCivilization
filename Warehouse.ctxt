@@ -1,0 +1,21 @@
+#BlueJ class context
+comment0.target=Warehouse
+comment0.text=\r\n\ Write\ a\ description\ of\ class\ Warehouse\ here.\r\n\ \r\n\ @author\ (your\ name)\ \r\n\ @version\ (a\ version\ number\ or\ a\ date)\r\n
+comment1.params=home
+comment1.target=Warehouse(AntHill)
+comment2.params=
+comment2.target=void\ act()
+comment3.params=
+comment3.target=boolean\ notEmpty()
+comment4.params=
+comment4.target=void\ addFood()
+comment5.params=
+comment5.target=void\ takeSome()
+comment6.params=
+comment6.target=boolean\ isFully()
+comment7.params=
+comment7.target=void\ updateImage()
+comment8.params=
+comment8.target=int\ randomCoord()
+comment8.text=\r\n\ Returns\ a\ random\ number\ relative\ to\ the\ size\ of\ the\ food\ pile.\r\n
+numComments=9

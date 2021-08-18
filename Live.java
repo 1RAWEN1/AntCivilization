@@ -8,10 +8,6 @@ import greenfoot.*;  // (World, Actor, GreenfootImage, Greenfoot and MouseInfo)
  */
 public class Live extends Actor
 {
-    /**
-     * Act - do whatever the Live wants to do. This method is called whenever
-     * the 'Act' or 'Run' button gets pressed in the environment.
-     */
     public int hp;
     private int MAX_HP;
     
@@ -23,13 +19,21 @@ public class Live extends Actor
     private AntHill home;
     
     private boolean underGround=true;
-    
-    public void setFood(int maxfood){
-        MAX_FOOD=maxfood;
+
+    public int impulseX = 0;
+    public int impulseY = 0;
+
+    public void setImpulse(int damage, int rotation){
+        impulseX = (int) (damage * 2 * Math.cos(Math.toRadians(rotation)));
+        impulseY = (int) (damage * 2 * Math.sin(Math.toRadians(rotation)));
+    }
+
+    public void setFood(int maxFood){
+        MAX_FOOD=maxFood;
         food=MAX_FOOD;
     }
-    public void setFood(int maxfood, int food){
-        MAX_FOOD=maxfood;
+    public void setFood(int maxFood, int food){
+        MAX_FOOD=maxFood;
         this.food=food;
     }
     
@@ -42,12 +46,12 @@ public class Live extends Actor
         }
     }
     
-    public void setHp(int maxhp){
-        MAX_HP=maxhp;
+    public void setHp(int maxHp){
+        MAX_HP=maxHp;
         hp=MAX_HP;
     }
-    public void setHp(int maxhp, int hp){
-        MAX_HP=maxhp;
+    public void setHp(int maxHp, int hp){
+        MAX_HP=maxHp;
         this.hp=hp;
     }
     
@@ -76,9 +80,6 @@ public class Live extends Actor
         home = homeHill;
     }
     
-    /**
-     * Get the home hill of this creature.
-     */
     public AntHill getHomeHill()
     {
         return home;
@@ -87,11 +88,10 @@ public class Live extends Actor
     public boolean isUnderGround(){
         return underGround;
     }
-    
-    public void moveInHome(){
+    public void moveInHome1(){
         underGround=!underGround;
     }
-
+    
     public void act() 
     {
         // Add your action code here.

@@ -1,22 +1,17 @@
 import greenfoot.*;  // (World, Actor, GreenfootImage, Greenfoot and MouseInfo)
 
+//renamed
 public class Creature  extends Live
 {
-    /** The maximum movement speed of the ant. */
     public final int SPEED = 3;
 
-    /** Current movement. Defined as the offset in x and y direction moved in each step. */
     private int deltaX;
     private int deltaY;
 
     private Actor takenObject;
     
     private Actor target;
-    /** The home ant hill. */
 
-    /**
-     * Crtae a new creature with neutral movement (movement speed is zero).
-     */
     public Creature()
     {
         getImage().setTransparency(100);
@@ -25,116 +20,103 @@ public class Creature  extends Live
     }
     
     public void take(Actor obj){
-        takenObject=obj;
+        takenObject = obj;
     }
     
     public void carry(){
-        if(takenObject!=null){
+        if(takenObject != null){
             takenObject.setRotation(getRotation());
-            takenObject.setLocation(getX()+(int)((getImage().getWidth()/2)*Math.cos(Math.toRadians(getRotation())))
-            , getY()+(int)((getImage().getWidth()/2)*Math.sin(Math.toRadians(getRotation()))));
+            takenObject.setLocation(getX() + (int) ((1 + getImage().getWidth() / 2) * Math.cos(Math.toRadians(getRotation())))
+            , getY() + (int) ((1 + getImage().getWidth() / 2) * Math.sin(Math.toRadians(getRotation()))));
         }
     }
     
     public void put(){
-        takenObject=null;
+        takenObject.setLocation(getX(), getY());
+        takenObject = null;
     }
     
     public void remove(){
         getWorld().removeObject(takenObject);
-        takenObject=null;
+        takenObject = null;
     }
-    /**
-     * Set the home hill of this creature.
-     */
-    /**
-     * Walk around randomly (random direction and speed).
-     */
+
     public void randomWalk()
     {
         if (randomChance(50)) {
             deltaX = adjustSpeed(deltaX);
             deltaY = adjustSpeed(deltaY);
         }
-        walk();
+        purposefulWalk();
     }
 
-    /**
-     * Try to walk home. Sometimes creatures get distracted or encounter small obstacles, so
-     * they occasionally head in a different direction for a moment.
-     */
     public void walkTowardsHome()
     {
         if(getHomeHill() == null) {
-            //if we do not have a home, we can not go there.
             return;
         }
         if (randomChance(30) && !intersects(getHomeHill())) {
-            randomWalk();  // cannot always walk straight. 30% chance to turn off course.
+            randomWalk();
         }
         else {
             headRoughlyTowards(getHomeHill());
-            walk();
+            purposefulWalk();
         }
     }
     
-    /**
-     * Try to walk away from home. (Goes occasionally off course a little.)
-     */
     public void walkAwayFromHome()
     {
         if(getHomeHill() == null) {
-            //if we do not have a home, we can not head away from it.
             return;
         }
         if (randomChance(30)) {
-            randomWalk();  // cannot always walk straight. 30% chance to turn off course.
+            randomWalk();
         }
         else {
-            headRoughlyTowards(getHomeHill());   // first head towards home...
-            deltaX = -deltaX;           // ...then turn 180 degrees
+            headRoughlyTowards(getHomeHill());
+            deltaX = -deltaX;
             deltaY = -deltaY;
-            walk();
+            purposefulWalk();
         }
     }
 
-    /**
-     * Adjust the walking direction to head towards the given co-ordinates.
-     */
+    public boolean moved(){
+        return deltaX != 0 || deltaY != 0;
+    }
+
     public void headTowards(int x, int y){
         deltaX = capSpeed(x - getX());
         deltaY = capSpeed(y - getY());
     }
     public void headTowards(Actor target)
     {
-        if(target!=null && target.getWorld()!=null){
+        if(target != null && target.getWorld() != null){
             this.target=target;
             deltaX = capSpeed(target.getX() - getX());
             deltaY = capSpeed(target.getY() - getY());
         }
     }
     
-    public void setCof(int cof){
-        this.cof=cof;
-    }
     public void turnTowards(Actor target){
-        deltaX = capSpeed(target.getX() - getX());
-        deltaY = capSpeed(target.getY() - getY());
-        
-        setRotation((int) (180 * Math.atan2(deltaY, deltaX) / Math.PI));
+        turnTowards(target.getX(), target.getY());
     }
     
-    private int cof=1;
+    private int cof = 1;
+
     public void updateCof(){
-        if(Greenfoot.getRandomNumber(2)==0){
-            cof=-1;
+        if(Greenfoot.getRandomNumber(2) == 0){
+            cof = -1;
         }
     }
-    
+
+    public void setCof(int cof){
+        this.cof = cof;
+    }
+
     private int needSpeed(int speed){
-        cof=1;
-        if(speed<0){
-            cof=-1;
+        cof = 1;
+        if(speed < 0){
+            cof = -1;
         }
         return cof*SPEED;
     }
@@ -143,165 +125,239 @@ public class Creature  extends Live
         return cof*SPEED;
     }
     
-    /**
-     * Walk forward in the current direction with the current speed. 
-     * (Does not change direction or speed.)
-     */
-    private boolean touchObs;
+    public void comeHome(){
+        moveInHome1();
+        atTarget();
+    }
+    
+    
     private int startX;
     private int startY;
     
-    private int moverot = 270;
+    private int runningDirection = 270;
     private boolean leftHand;
-    private int summ;
+    private int sum;
     
     private int rot;
     
-    private int runPurposefully = 0;
-    private void turnRandom(){
-        if(summ==0){
-            moverot=((rot+45)/90)*90;
-            leftHand=rot<moverot;
+    private boolean runPurposefully;
+    
+    private int razn = 0;
+    
+    private void turnWhenObsIsAhead(Actor obs){
+        if(!runPurposefully){
+            runPurposefully = true;
+
+            if(target != null){
+                turnTowards(target);
+                rot = getRotation();
+                runningDirection = ((rot + 45) / 90) * 90;
+                setRotation(0);
+            }
+            else if(obs != touchingBlock){
+                turnTowards(obs);
+                rot = getRotation();
+                runningDirection = ((rot + 45) / 90) * 90;
+                setRotation(0);
+            }
+            else {
+                runningDirection = Greenfoot.getRandomNumber(4)*90;
+            }
+            leftHand = rot < runningDirection;
             
-            setLocation(startX+(int)(Math.cos(Math.toRadians(moverot))*SPEED), startY+(int)(Math.sin(Math.toRadians(moverot))*SPEED));
+            setLocation(startX + (int) (Math.cos(Math.toRadians(runningDirection)) * SPEED), startY + (int) (Math.sin(Math.toRadians(runningDirection)) * SPEED));
             
             if(leftHand){
-                cof=-1;
+                cof = -1;
             }
             else{
-                cof=1;
+                cof = 1;
             }
-            if(isTouching(UndergroundObs.class)){
+            if(isTouching(UndergroundObs.class) && isUnderGround() || isTouching(Obs.class) && !isUnderGround()){
                 if(leftHand){
-                    moverot-=90;
-                    summ--;
+                    runningDirection -= 90;
+                    sum--;
                 }
                 else{
-                    moverot+=90;
-                    summ++;
+                    runningDirection += 90;
+                    sum++;
                 }
             }
-            else{
-                runPurposefully=5;
+            
+            if(sum == 0 && !isUnderGround()){
+                runPurposefully = false;
             }
         }
         else{
-            //setLocation(startX-deltaX, startY-deltaY);
             if(leftHand){
-                moverot-=90;
-                summ--;
+                runningDirection -= 90;
+                razn-=90;
+                sum--;
             }
             else{
-                moverot+=90;
-                summ++;
+                runningDirection += 90;
+                razn+=90;
+                sum++;
             }
         }
     }
     
-    public void walk(){
-        if(summ==0 && runPurposefully==0 || target!=null && intersects(target)){
-            if(target!=null && intersects(target)){
-                atTarget();
-            }
-            walk1();
-            if(target!=null && target.getWorld()==null){
-                target=null;
-            }
+    public void purposefulWalk(){
+        
+        if(target != null && target.getWorld() == null){
+            target = null;
         }
-        else if(summ!=0 || runPurposefully>0){
-            if(target!=null && target.getWorld()==null){
-                target=null;
+        //try{
+            if(target != null && intersects(target) || !isUnderGround() && sum == 0){
+                if(target != null && intersects(target)){
+                    atTarget();
+                }
+                walk();
             }
-            
-            if(target!=null && !intersects(target)){
-                turnInHome();
+            else{
+                turnInMaze();
             }
-        }
+        //}catch(Exception e){System.out.println(target+" "+target.getWorld());Greenfoot.stop();}
     }
     
-    public void walk1()
+    private void isAtEdgeOfTheWorld(){
+        runningDirection += 180;
+        leftHand = !leftHand;
+    }
+    
+    Block touchingBlock;
+    private Obs touchingObs;
+    public void walk()
     {
-        startX=getX();
-        startY=getY();
-        rot=getRotation();
+        razn=0;
+        startX = getX();
+        startY = getY();
+        rot = getRotation();
         setRotation(0);
         
         setLocation(startX + deltaX, startY);
         if(!isUnderGround()){
-            if(getOneIntersectingObject(Obs.class)!=null){
-                deltaX=0;
-                deltaY=randomSpeed();
-                if(touchObs=false){
-                    updateCof();
-                    touchObs=true;
+            touchingObs = null;
+            if(isTouching(Obs.class)){
+                deltaX = 0;
+                deltaY = needSpeed(deltaY);
+                touchingObs = (Obs) getOneIntersectingObject(Obs.class);
+            }
+            
+            setLocation(startX + deltaX,startY + deltaY);
+            if(isTouching(Obs.class)){
+                deltaY = 0;
+                if(touchingObs == null){
+                    deltaX = needSpeed(deltaX);
+                    touchingObs = (Obs) getOneIntersectingObject(Obs.class);
                 }
             }
-            else{
-                setLocation(startX,startY + deltaY);
-                if(getOneIntersectingObject(Obs.class)!=null){
-                    deltaY=0;
-                    deltaX=randomSpeed();
-                    if(touchObs=false){
-                        updateCof();
-                        touchObs=true;
-                    }
-                }
-                else{
-                    touchObs=false;
-                }
+            
+            if(touchingObs != null){
+                turnWhenObsIsAhead(touchingObs);
             }
         }
         else{
-            touchObs=false;
-            
-            if(getOneIntersectingObject(UndergroundObs.class)!=null){
-                deltaX=0;
-                deltaY=needSpeed(deltaY);
-                touchObs=true;
+            touchingBlock = null;
+            if(isTouching(UndergroundObs.class)){
+                deltaX = 0;
+                deltaY = needSpeed(deltaY);
+                touchingBlock = (Block) getOneIntersectingObject(Block.class);
             }
             
-            setLocation(startX+deltaX,startY + deltaY);
-            if(getOneIntersectingObject(UndergroundObs.class)!=null){
-                deltaY=0;
-                if(!touchObs){
-                    deltaX=needSpeed(deltaX);
+            setLocation(startX + deltaX,startY + deltaY);
+            if(isTouching(UndergroundObs.class)){
+                deltaY = 0;
+                if(touchingBlock == null){
+                    deltaX = needSpeed(deltaX);
+                    touchingBlock = (Block) getOneIntersectingObject(Block.class);
                 }
-                touchObs=true;
             }
             
-            if(touchObs){
-                turnRandom();
+            if(touchingBlock != null){
+                if(touchingBlock.canDig(this)){
+                    touchingBlock.dig(this);
+                }
+                else{
+                    turnWhenObsIsAhead(touchingBlock);
+                }
             }
         }
         
         setLocation(startX + deltaX,startY + deltaY);
         
-        /*if(isUnderGround() && isTouching(UndergroundObs.class)){
+        if(isUnderGround() && isTouching(UndergroundObs.class)){
             deltaX=0;
             deltaY=0;
             setLocation(startX,startY);
-            //turnRandom();
         }
         else if(!isUnderGround() && isTouching(Obs.class)){
             deltaX=0;
             deltaY=0;
             setLocation(startX,startY);
-        }*/
-        if(deltaX==0 && deltaY==0){
+        }
+
+        if(deltaX == 0 && deltaY == 0){
             setRotation(rot);
         }
         else{
             setRotation((int) (180 * Math.atan2(deltaY, deltaX) / Math.PI));
         }
         
+        if(touchingBlock != null && touchingBlock.getWorld() != null && touchingBlock.canDig(this)){
+            turnTowards(touchingBlock);
+        }
+        
         if(isAtEdge()){
             setCof(cof * -1);
         }
     }
+
+    public boolean haveImpulse() {
+        return impulseX + impulseY != 0;
+    }
+
+    public void impulseMovement(){
+        deltaX = impulseX;
+        deltaY = impulseY;
+
+        startX = getX();
+        startY = getY();
+        setRotation(0);
+
+        setLocation(startX + deltaX, startY);
+        if(isTouching(Obstacle.class)){
+            deltaX = 0;
+        }
+
+        setLocation(startX + deltaX,startY + deltaY);
+        if(isTouching(Obstacle.class)){
+            deltaY = 0;
+        }
+
+        setLocation(startX + deltaX,startY + deltaY);
+
+        setRotation((int) (180 * Math.atan2(deltaY, deltaX) / Math.PI));
+
+        if(impulseX > 0) {
+            impulseX--;
+        }
+        else if(impulseX < 0){
+            impulseX++;
+        }
+        if(impulseY > 0) {
+            impulseY--;
+        }
+        else if(impulseY < 0){
+            impulseY++;
+        }
+    }
     
     public void atTarget(){
-        summ=0;
-        runPurposefully=0;
+        sum = 0;
+        runPurposefully = false;
+        runningDirection = Greenfoot.getRandomNumber(4)*90;
+        target = null;
     }
     
     private final int dist=3;
@@ -309,69 +365,76 @@ public class Creature  extends Live
     private int startx;
     private int starty;
     private int startRot;
-    private void turnInHome(){
-        headTowards(getX()+(int)(Math.cos(Math.toRadians(moverot))*SPEED), getY()+(int)(Math.sin(Math.toRadians(moverot))*SPEED));
-        walk1();
-        if(runPurposefully>0){
-            runPurposefully--;
-        }
-        
-        if(summ!=0){
-            startx=getX();
-            starty=getY();
+    private void turnInMaze(){
+        headTowards(getX() + (int) (Math.cos(Math.toRadians(runningDirection)) * SPEED), getY() + (int) (Math.sin(Math.toRadians(runningDirection)) * SPEED));
+        walk();
+
+        if(sum != 0){
+            startx = getX();
+            starty = getY();
             
-            startRot=getRotation();
+            startRot = getRotation();
             
-            moverot%=360;
+            runningDirection %=360;
             if(leftHand){
                 turn(90);
                 move(dist);
-                boolean tObs1=getOneIntersectingObject(Block.class)!=null;
+                boolean tObs1 = getOneIntersectingObject(UndergroundObs.class) != null;
+                boolean tObsLeft = getOneIntersectingObject(Obs.class) != null;
                 
                 setLocation(startx,starty);
                 setRotation(startRot);
                 move(-getImage().getWidth());
-                boolean tObs2=getOneIntersectingObject(Block.class)!=null;
+                boolean tObs2 = getOneIntersectingObject(UndergroundObs.class) != null;
+                boolean tObsBack = getOneIntersectingObject(Obs.class) != null;
                 turn(90);
                 move(dist);
-                boolean tObs3=getOneIntersectingObject(Block.class)!=null;
-                setLocation(startx,starty);
+                boolean tObs3 = getOneIntersectingObject(UndergroundObs.class) != null;
+                boolean tObsLeftBack = getOneIntersectingObject(Obs.class) != null;
+                setLocation(startx, starty);
                 setRotation(startRot);
                 
-                if(tObs1==false && tObs2==false && tObs3==true){
-                    moverot+=90;
-                    summ++;
+                if(!tObs1 && !tObs2 && tObs3 && isUnderGround()
+                || !tObsLeft && !tObsBack && tObsLeftBack && !isUnderGround()){
+                    runningDirection += 90;
+                    sum++;
                 }
             }
             else{
                 turn(-90);
                 move(dist);
-                boolean tObs1=getOneIntersectingObject(Block.class)!=null;
+                boolean tObs1 = getOneIntersectingObject(UndergroundObs.class) != null;
+                boolean tObsLeft = getOneIntersectingObject(Obs.class) != null;
                 
-                setLocation(startx,starty);
+                setLocation(startx, starty);
                 setRotation(startRot);
                 move(-getImage().getWidth());
-                boolean tObs2=getOneIntersectingObject(Block.class)!=null;
+                boolean tObs2 = getOneIntersectingObject(UndergroundObs.class) != null;
+                boolean tObsBack = getOneIntersectingObject(Obs.class) != null;
                 turn(-90);
                 move(dist);
-                //setLocation(getX()+(int)(Math.cos(Math.toRadians(moverot))*getImage().getHeight())
-                //, getY()+(int)(Math.sin(Math.toRadians(moverot))*getImage().getHeight()));
-                boolean tObs3=getOneIntersectingObject(Block.class)!=null;
+                boolean tObs3 = getOneIntersectingObject(UndergroundObs.class) != null;
+                boolean tObsLeftBack = getOneIntersectingObject(Obs.class) != null;
                 setLocation(startx,starty);
                 setRotation(startRot);
                 
-                if(tObs1==false && tObs2==false && tObs3==true){
-                    moverot-=90;
-                    summ--;
+                if(!tObs1 && !tObs2 && tObs3 && isUnderGround()
+                || !tObsLeft && !tObsBack && tObsLeftBack && !isUnderGround()){
+                    runningDirection -= 90;
+                    sum--;
                 }
             }
+        
+            if(sum == 0 && !isUnderGround()){
+                atTarget();
+            }
+        }
+        
+        if(isAtEdge()){
+            atTarget();
         }
     }
-    /**
-     * Adjust the walking direction to head somewhat towards the given co-ordinates. This does not 
-     * always head in the same direction. The heading is slightly random (but likely to be somewhat
-     * towards the target) to make it look more natural.
-     */
+
     private void headRoughlyTowards(Actor target)
     {
         if(target!=null && target.getWorld()!=null){
@@ -387,10 +450,6 @@ public class Creature  extends Live
         }
     }
     
-    /**
-     * Compute and return the direction (delta) that we should steer in when
-     * we're on our way home.
-     */
     private int computeHomeDelta(boolean move, int current, int home)
     {
         if (move) {
@@ -403,19 +462,12 @@ public class Creature  extends Live
             return 0;
     }
 
-    /**
-     * Adjust the speed randomly (start moving, continue or slow down). The
-     * speed returned is in the range [-SPEED .. SPEED].
-     */
     private int adjustSpeed(int speed)
     {
         speed = speed + Greenfoot.getRandomNumber(2 * SPEED - 1) - SPEED + 1;
         return capSpeed(speed);
     }
 
-    /**
-     * Make sure the speed returned is in the range [-SPEED .. SPEED].
-     */
     private int capSpeed(int speed)
     {
         if (speed < -SPEED)
@@ -426,10 +478,6 @@ public class Creature  extends Live
             return speed;
     }
 
-    /**
-     * Return 'true' in exactly 'percent' number of calls. That is: a call
-     * randomChance(25) has a 25% chance to return true.
-     */
     private boolean randomChance(int percent)
     {
         return Greenfoot.getRandomNumber(100) < percent;

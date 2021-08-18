@@ -1,18 +1,12 @@
 import greenfoot.*;  // (World, Actor, GreenfootImage, and Greenfoot)
 import java.util.ArrayList;
 
+//renamed
 public class Ant extends Creature
 {
-    /** Indicate whether we have any food with us. */
     private boolean carryingFood = false;
 
-    /** How much pheromone do we have right now. */
-    private int pheromoneLevel = 0;
-
-    /** How well do we remember the last pheromone - larger number: more recent */
-    private int foundLastPheromone = 0;
-    
-    private final int radius = 50;
+    private final int viewingRadius = 50;
     
     private int level = 1;
     
@@ -20,13 +14,10 @@ public class Ant extends Creature
     
     private int profession = 0;
 
-    /**
-     * Create an ant with a given home hill. The initial speed is zero (not moving).
-     */
     public Ant(AntHill home)
     {
         updateCof();
-        profession=Greenfoot.getRandomNumber(2)+1;
+        profession = Greenfoot.getRandomNumber(2) + 1;
         setHomeHill(home);
         setVariables();
     }
@@ -34,7 +25,7 @@ public class Ant extends Creature
     public Ant(AntHill home, int profession)
     {
         updateCof();
-        this.profession=profession;
+        this.profession = profession;
         setHomeHill(home);
         setVariables();
     }
@@ -44,7 +35,7 @@ public class Ant extends Creature
     }
     
     private void setVariables(){
-        if(profession==1){
+        if(profession == 1){
             setHp(3);
         }
         else{
@@ -53,17 +44,14 @@ public class Ant extends Creature
         
         setFood(3, 1);
         
-        needToCheck=(ArrayList<AntHill>)AntWorld.homeArray.clone();
+        needToCheck = (ArrayList<AntHill>)AntWorld.arrayOfHouses.clone();
     }
 
-    /**
-     * Do what an ant's gotta do.
-     */
     public void act()
     {
         dTimer.calculate();
         if(!isUnderGround()){
-            if(profession==1){
+            if(profession == 1){
                 if (carryingFood) {
                     walkTowardsHome();
                     handlePheromoneDrop();
@@ -73,27 +61,26 @@ public class Ant extends Creature
                     searchForFood();
                 }
             }
-            else if(profession==2){
-                searchEnemies();
+            else if(profession == 2){
+                searchForEnemies();
             }
         }
         else{
             inHome();
         }
         if(atHome()){
-            moveInHome();
+            comeHome();
         }
         
         eatFood();
         
         updateAnimation();
         
+        checkFood();
+        
         die();
     }
-
-    /**
-     * Walk around in search of food.
-     */
+    
     private void searchForFood()
     {
         if(canSeeFood()){
@@ -102,57 +89,55 @@ public class Ant extends Creature
         else if (smellPheromone()) {
             walkTowardsPheromone();
         }
-        else {
-            randomWalk();
+        else{
+            searchForEnemies();
         }
-        checkFood();
     }
     
-    private SimpleTimer dTimer=new SimpleTimer();
+    private final SimpleTimer dTimer=new SimpleTimer();
     private final int dSteps = 50;
     
-    private void searchEnemies(){
-        if(seeEnemy()){
+    private void searchForEnemies(){
+        if(canSeeEnemy()){
             turnTowards(enemy);
             if(!intersects(enemy)){
                 headTowards(enemy);
-                walk();
+                purposefulWalk();
             }
             
             attack();
         }
-        else if(smellAttackPheromone()){
+        else if(smellAttackPheromone() && profession==2){
             walkTowardsAttackPheromone();
         }
-        else if(foodNotFully() && canSeeFood()){
+        else if(foodNotFully() && canSeeFood() && profession==2){
             walkTowardsFood();
         }
-        else if(seeEnemyHome()){
+        else if(canSeeEnemyHome() && profession==2){
             headTowards(enemyHome);
-            walk();
+            purposefulWalk();
         }
         else{
             randomWalk();
         }
-        
-        checkFood();
     }
     
-    ArrayList<AntHill> needToCheck=new ArrayList<AntHill>();
+    ArrayList<AntHill> needToCheck = new ArrayList<AntHill>();
     AntHill enemyHome;
     
     boolean checked = false;
-    private boolean seeEnemyHome(){
-        if(getObjectsInRange(radius, AntHill.class).size()>0){
-            enemyHome=getObjectsInRange(radius, AntHill.class).get(0);
-            checked=true;
-            for(int i=0;i<needToCheck.size();i++){
-                if(enemyHome==needToCheck.get(i)){
-                    checked=false;
+
+    private boolean canSeeEnemyHome(){
+        if(getObjectsInRange(viewingRadius, AntHill.class).size() > 0){
+            enemyHome=getObjectsInRange(viewingRadius, AntHill.class).get(0);
+            checked = true;
+            for(int i = 0;i < needToCheck.size();i++){
+                if(enemyHome == needToCheck.get(i)){
+                    checked = false;
                     break;
                 }
             }
-            return enemyHome!=getHomeHill() && enemyHome.getAntNumber()>0 && !checked;
+            return enemyHome != getHomeHill() && enemyHome.getAntNumber() > 0 && !checked;
         }
         else{
             return false;
@@ -161,7 +146,14 @@ public class Ant extends Creature
     
     private void attack(){
         if(intersects(enemy) && dTimer.getTime()>=dSteps){
-            enemy.damage(1+(level/5));
+            if(profession==2){
+                enemy.damage(1+(level/5));
+                //enemy.setImpulse(1+(level/5), getRotation());
+            }
+            else{
+                enemy.damage(1);
+                //enemy.setImpulse(1, getRotation());
+            }
             dropAttackPheromone();
             if(level<MAX_LEVEL)
                 level++;
@@ -178,17 +170,17 @@ public class Ant extends Creature
     private void walkTowardsAttackPheromone(){
         Actor ph = getOneIntersectingObject(AttackPheromone.class);
         headTowards(ph);
-        walk();
+        purposefulWalk();
     }
     
     private AttackPheromone ap;
     
-    private int startAPheromoneValue = 300;
+    private final int startAPheromoneValue = 300;
     private void dropAttackPheromone(){
         if(ap!=null && ap.getWorld()==null){
             ap=null;
         }
-        if(ap!=null && !intersects(ap) || ap==null){
+        if(ap==null || !intersects(ap)){
             ap=new AttackPheromone((startAPheromoneValue + level*24));
             getWorld().addObject(ap, getX(), getY());
         }
@@ -196,10 +188,10 @@ public class Ant extends Creature
     
     private Live crInRadius;
     private Live enemy;
-    private boolean seeEnemy(){
+    private boolean canSeeEnemy(){
         enemy=null;
-        for(int i=0;i<getObjectsInRange(radius, Live.class).size();i++){
-            crInRadius=getObjectsInRange(radius, Live.class).get(i);
+        for(int i = 0; i<getObjectsInRange(viewingRadius, Live.class).size(); i++){
+            crInRadius=getObjectsInRange(viewingRadius, Live.class).get(i);
             if(crInRadius.getHomeHill().getTeam()!=getHomeHill().getTeam() && crInRadius.isUnderGround()==isUnderGround()){
                 enemy=crInRadius;
             }
@@ -208,32 +200,34 @@ public class Ant extends Creature
     }
     
     private boolean canSeeFood(){
-        return getObjectsInRange(radius, Food.class).size()>0 && !isUnderGround();
+        return getObjectsInRange(viewingRadius, Food.class).size()>0 && !isUnderGround();
     }
     
     private void walkTowardsFood(){
-        Actor food = getObjectsInRange(radius, Food.class).get(0);
+        Actor food = getObjectsInRange(viewingRadius, Food.class).get(0);
         if (food != null) {
             headTowards(food);
-            walk();
+            purposefulWalk();
         }
     }
 
-    /**
-     * Are we home? Drop the food if we are, and start heading back out.
-     */
     private void checkHome()
     {
-        Warehouse wr=(Warehouse)getOneIntersectingObject(Warehouse.class);
-        if (wr!=null) {
-            wr.addFood();
+        if(touchingBlock!=null && touchingBlock.getWorld()!=null){
+            turnTowards(touchingBlock);
+        }
+        TakenFood touchingFood = (TakenFood)getOneIntersectingObject(TakenFood.class);
+        if (touchingBlock!=null && !touchingBlock.canDig(this)
+        && Math.sqrt(Math.pow(getX()-getHomeHill().getX(),2)+Math.pow(getY()-getHomeHill().getY(),2))> viewingRadius) {
+            if(touchingFood==null || touchingFood.taken){
+                dropFood();
+            }
+        }
+        else if(tf.getWorld()==null){
             dropFood();
         }
     }
 
-    /**
-     * Are we home?
-     */
     private boolean atHome()
     {
         if(profession==2){
@@ -256,39 +250,36 @@ public class Ant extends Creature
 
     }
     
-    private Actor target;
+    private Actor myTarget;
+
     private void inHome(){
-        if(target==null){
-            target=getHomeHill();
+        if(myTarget==null){
+            myTarget=getHomeHill();
         }
-        if(foodNotFully() && getHomeHill().getFood()!=0){
-            for(int i=0;i<getObjectsInRange(radius,Warehouse.class).size();i++){
-                if(getObjectsInRange(radius,Warehouse.class).get(i).notEmpty()){
-                    target=getObjectsInRange(radius,Warehouse.class).get(i);
-                    break;
-                }
-            }
+        if(foodNotFully() && getHomeHill().getFood()!=0 && getObjectsInRange(viewingRadius,TakenFood.class).size()>0){
+            myTarget=getObjectsInRange(viewingRadius,TakenFood.class).get(0);
         }
         else{
-            target=getHomeHill();
+            myTarget=getHomeHill();
         }
         if(carryingFood){
-            for(int i=0;i<getObjectsInRange(radius, Warehouse.class).size();i++){
-                if(!getObjectsInRange(radius, Warehouse.class).get(i).isFully()){
-                    target=getObjectsInRange(radius, Warehouse.class).get(i);
-                    break;
-                }
+            /*if(getObjectsInRange(radius,TakenFood.class).size()>0){
+                myTarget=getObjectsInRange(radius,TakenFood.class).get(0);
             }
+            else{*/
+                myTarget=null;
+                randomWalk();
+            //}
         }
         if(profession==2){
-            if(seeEnemy()){
-                target=enemy;
+            if(canSeeEnemy()){
+                myTarget=enemy;
                 attack();
                 turnTowards(enemy);
             }
             else if(isTouching(AntHill.class)){
                 for(int i=0;i<needToCheck.size();i++){
-                    if((AntHill)getOneIntersectingObject(AntHill.class)==needToCheck.get(i)){
+                    if(getOneIntersectingObject(AntHill.class)==needToCheck.get(i)){
                         needToCheck.remove(i);
                         break;
                     }
@@ -296,18 +287,18 @@ public class Ant extends Creature
             }
         }
         
-        if(target!=null && target.getWorld()==null){
-            target=null;
+        if(myTarget!=null && myTarget.getWorld()==null){
+            myTarget=null;
         }
         
-        if(target!=null && target.getWorld()!=null){
-            headTowards(target);
-            walk();
+        if(touchingBlock!=null && touchingBlock.getWorld()!=null && touchingBlock.canDig(this)){
+            myTarget=touchingBlock;
         }
-        /*if((getX()-getHomeHill().getX())%20>0 && (getX()-getHomeHill().getX())%20<SPEED
-        && (getY()-getHomeHill().getY())%20>0 && (getY()-getHomeHill().getY())%20<SPEED){
-            setLocation(getX()+(getX()-getHomeHill().getX())%20, getY());
-        }*/
+        
+        if(myTarget!=null){
+            headTowards(myTarget);
+            purposefulWalk();
+        }
         
         if(carryingFood){
             if(tf!=null){
@@ -321,16 +312,13 @@ public class Ant extends Creature
     }
     
     public void eat1(){
-        Warehouse wh=(Warehouse)getOneIntersectingObject(Warehouse.class);
-        if(wh!=null && wh.notEmpty() && foodNotFully()){
-            wh.takeSome();
+        TakenFood tf=(TakenFood)getOneIntersectingObject(TakenFood.class);
+        if(tf!=null && foodNotFully()){
+            tf.eat();
             eat();
         }
     }
 
-    /**
-     * Is there any food here where we are? If so, take some!.
-     */
     public void checkFood()
     {
         Food food = (Food) getOneIntersectingObject(Food.class);
@@ -338,16 +326,13 @@ public class Ant extends Creature
             if(foodNotFully()){
                 eatFood(food);
             }
-            if (profession==1 & food.getWorld()!=null) {
+            if (profession==1 && food.getWorld()!=null && !carryingFood) {
                 takeFood(food);
     
             }
         }
     }
 
-    /**
-     * Take some food from a fool pile.
-     */
     private TakenFood tf;
     private final int startPheromoneValue=60;
     private void takeFood(Food food)
@@ -355,7 +340,7 @@ public class Ant extends Creature
         carryingFood = true;
         food.takeSome();
         
-        tf=new TakenFood();
+        tf=new TakenFood(getHomeHill());
         getWorld().addObject(tf,getX(),getY());
         take(tf);
     }
@@ -365,9 +350,6 @@ public class Ant extends Creature
         eat();
     }
 
-    /**
-     * Drop our food in the ant hill.
-     */
     private void dropFood()
     {
         carryingFood = false;
@@ -375,54 +357,32 @@ public class Ant extends Creature
             level++;
         }
         lastPh=null;
-        remove();
-        tf=null;
-        /*GreenfootImage im=new GreenfootImage(getImage().getWidth()+2,getImage().getHeight());
-        im.drawImage(new GreenfootImage("takenFood.png"),0,(im.getHeight()/2)-1);
-        im.drawImage(getImage(),2,0);
-        setImage(im);*/
+        tf.drop();
+        put();
         updateCof();
     }
 
-    /**
-     * Check whether we can drop some pheromone yet. If we can, do it.
-     */
     private Pheromone lastPh;
-    
-    private int phIndex;
     private void handlePheromoneDrop()
     {
-        if (lastPh!=null && !intersects(lastPh) || lastPh==null) {
+        if (lastPh==null || !intersects(lastPh)) {
             lastPh = new Pheromone(startPheromoneValue + level*12);
             getWorld().addObject(lastPh, getX(), getY());
         }
     }
 
-    /**
-     * Check whether we can smell pheromones. If we can, return true, otherwise return false.
-     */
     public boolean smellPheromone()
     {
         Actor ph = getOneIntersectingObject(Pheromone.class);
         return (ph != null);
     }
 
-    /**
-     * If we can smell some pheromone, walk towards it. If not, do nothing.
-     */
     private Pheromone nextPh;
     
     private Pheromone smellPh;
+
     public void walkTowardsPheromone()
     {
-        /*Actor ph = getOneIntersectingObject(Pheromone.class);
-        if (ph != null) {
-            headTowards(ph);
-            walk();
-            if (ph.getX() == getX() && ph.getY() == getY()) {
-                foundLastPheromone = PH_TIME;
-            }
-        }*/
         Pheromone ph = (Pheromone)getOneIntersectingObject(Pheromone.class);
         if(nextPh!=null){
             ph=nextPh;
@@ -430,7 +390,7 @@ public class Ant extends Creature
         if (ph != null) {
             try{
                 headTowards(ph);
-                walk();
+                purposefulWalk();
                 if (ph.getX() == getX() && ph.getY() == getY()) {
                     for(int i=0;i<getObjectsInRange(ph.getMaxIntensity()/3,Pheromone.class).size();i++){
                         smellPh=getObjectsInRange(ph.getMaxIntensity()/3,Pheromone.class).get(i);
@@ -451,10 +411,13 @@ public class Ant extends Creature
     private final int step=2;
     
     private int shot=1;
-    
     private final int MAX_SHOT=3;
+
     private void updateAnimation(){
-        animation++;
+        if(moved()){
+            animation++;
+        }
+
         if(animation>=step){
             animation=0;
             shot++;
@@ -462,39 +425,7 @@ public class Ant extends Creature
         if(shot>MAX_SHOT){
             shot=1;
         }
-        //for greenfoot web site
-        /*if(profession==1){
-            setImage("ant"+shot+".png");
-            if(getHomeHill().getTeam()==1){
-                getImage().setColor(Color.BLUE);
-            }
-            else if(getHomeHill().getTeam()==2){
-                getImage().setColor(Color.RED);
-            }
-            else if(getHomeHill().getTeam()==3){
-                getImage().setColor(Color.YELLOW);
-            }
-            else if(getHomeHill().getTeam()==4){
-                getImage().setColor(Color.GREEN);
-            }
-            getImage().fillRect(1,4,1,2);
-        }
-        else{
-            setImage("bant"+shot+".png");
-            if(getHomeHill().getTeam()==1){
-                getImage().setColor(Color.BLUE);
-            }
-            else if(getHomeHill().getTeam()==2){
-                getImage().setColor(Color.RED);
-            }
-            else if(getHomeHill().getTeam()==3){
-                getImage().setColor(Color.YELLOW);
-            }
-            else if(getHomeHill().getTeam()==4){
-                getImage().setColor(Color.GREEN);
-            }
-            getImage().fillRect(2,8,2,4);
-        }*/
+
         if(profession==1){
             setImage("ant"+shot+".png");
             if(getHomeHill().getTeam()==1){
@@ -511,7 +442,7 @@ public class Ant extends Creature
             }
             getImage().fillRect(1,4,1,2);
         }
-        if(profession==2){
+        else{
             setImage("soldier"+shot+".png");
             if(getHomeHill().getTeam()==1){
                 getImage().setColor(Color.BLUE);
@@ -526,7 +457,6 @@ public class Ant extends Creature
                 getImage().setColor(Color.GREEN);
             }
             getImage().fillRect(2,8,2,2);
-            //getImage().scale((int)(getImage().getWidth()*2),(int)(getImage().getHeight()*2));
         }
         
         if(isUnderGround()){
@@ -536,16 +466,18 @@ public class Ant extends Creature
     
     private void die(){
         if(food<=0 || hp<=0){
-            if(tf!=null){
+            if(tf!=null && tf.getWorld()!=null){
                 getWorld().addObject(new Food(1),tf.getX(),tf.getY());
                 getWorld().removeObject(tf);
             }
+
             if(profession==1){
                 getHomeHill().antDead();
             }
             else{
                 getHomeHill().soldierDead();
             }
+
             getWorld().removeObject(this);
         }
     }

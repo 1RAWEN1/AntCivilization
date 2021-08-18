@@ -11,9 +11,6 @@ public class AttackPheromone extends Actor
     private final static int MAX_INTENSITY = 320;
     private int intensity;
 
-    /**
-     * Create a new drop of pheromone with full intensity.
-     */
     public AttackPheromone()
     {
         intensity = MAX_INTENSITY;
@@ -26,9 +23,6 @@ public class AttackPheromone extends Actor
         updateImage();
     }
 
-    /**
-     * The pheromone decreases the intensity. When the intensity reaches zero, it disappears.
-     */
     public void act()
     {
         intensity -= 1;
@@ -42,9 +36,6 @@ public class AttackPheromone extends Actor
         }
     }
 
-    /**
-     * Make the image. The size and transparency are proportional to the intensity.
-     */
     private void updateImage()
     {
         int size = intensity / 3 + 5;

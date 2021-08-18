@@ -7,19 +7,15 @@ public class AntHill extends Actor
     private double chanceToWin;
     
     static int teams;
-    
     private int teamNum;
     
     private int fullNumberOfAnts = 5;
-    /** Number of ants that have come out so far. */
     private int ants = 0;
     
     private int soldiers = 0;
     
-    /** Total number of ants in this hill. */
     private int maxAnts = 40;
 
-    /** Counter to show how much food have been collected so far. */
     private Counter foodCounter;
     
     private Counter antCounter;
@@ -30,30 +26,24 @@ public class AntHill extends Actor
     
     private boolean haveQueen=true;
     
-    /**
-     * Constructor for ant hill with default number of ants (40).
-     */
     public AntHill()
     {
-        AntWorld.homeArray.add(this);
+        AntWorld.arrayOfHouses.add(this);
     }
 
-    /**
-     * Construct an ant hill with a given number of ants.
-     */
     public AntHill(int numberOfAnts)
     {
         maxAnts = numberOfAnts;
         teams++;
         teamNum=teams;
-        AntWorld.homeArray.add(this);
+        AntWorld.arrayOfHouses.add(this);
     }
     
     public AntHill(int numberOfAnts, int team)
     {
         maxAnts = numberOfAnts;
         teamNum=team;
-        AntWorld.homeArray.add(this);
+        AntWorld.arrayOfHouses.add(this);
     }
     
     public void setAntNumber(int ants){
@@ -62,10 +52,13 @@ public class AntHill extends Actor
     
     private final int BLOCK_SIZE=20;
     public void createUnderground(){
+        // || Math.abs(4-x)+Math.abs(4-y)==1
+        //        || 4>Math.abs(4-y) && Math.abs(4-y)>1 && Math.abs(4-x)<=1 || 4>Math.abs(4-x) && Math.abs(4-x)>1 && Math.abs(4-y)<=1
+        
+        //Math.abs(4-x)+Math.abs(4-y)>6 || 
         for(int x=0;x<9;x++){
             for(int y=0;y<9;y++){
-                if(Math.abs(4-x)+Math.abs(4-y)>6 || 4-x==0 && 4-y==0 || Math.abs(4-x)+Math.abs(4-y)==1
-                || 4>Math.abs(4-y) && Math.abs(4-y)>1 && Math.abs(4-x)<=1 || 4>Math.abs(4-x) && Math.abs(4-x)>1 && Math.abs(4-y)<=1){
+                if(Math.abs(4-x)+Math.abs(4-y)>6 || 4-x==0 && 4-y==0){
                     
                 }
                 else{
@@ -74,11 +67,11 @@ public class AntHill extends Actor
             }
         }
         
-        getWorld().addObject(new Warehouse(this), getX(), getY()+50);
-        getWorld().addObject(new Warehouse(this), getX()+50, getY());
-        getWorld().addObject(new Warehouse(this), getX()-50, getY());
+        //getWorld().addObject(new Warehouse(this), getX(), getY()+50);
+        //getWorld().addObject(new Warehouse(this), getX()+50, getY());
+        //getWorld().addObject(new Warehouse(this), getX()-50, getY());
         
-        getWorld().addObject(new QueenAnt(this),getX()-20,getY()-55);
+        getWorld().addObject(new QueenAnt(this),getX(),getY());
         
         for(int i=0;i<fullNumberOfAnts;i++){
             //getWorld().addObject(new Ant(this),getX()-20,getY()-55);
@@ -92,7 +85,7 @@ public class AntHill extends Actor
         if(ant.getProfession()==2){
             newSoldier();
         } 
-        getWorld().addObject(ant ,getX()-20,getY()-55);
+        getWorld().addObject(ant ,getX(),getY());
     }
     
     public void newAnt(Ant ant){
@@ -143,9 +136,6 @@ public class AntHill extends Actor
         setImage(image);
     }
 
-    /**
-     * Act: If there are still ants left inside, see whether one should come out.
-     */
     boolean start=true;
     public void act()
     {
@@ -180,12 +170,9 @@ public class AntHill extends Actor
             }
         }
         
-        chanceLabel.setValue(""+(double)((int)(chanceToWin*1000))/10+" %");
+        chanceLabel.setValue("AntHill "+getTeam());
     }
     
-    /**
-     * Record that we have collected another bit of food.
-     */
     public void countFood()
     {
         if(foodCounter == null) 
@@ -229,7 +216,7 @@ public class AntHill extends Actor
         antCounter.draw();
     }
     
-    private SimpleTimer timer = new SimpleTimer();
+    private final SimpleTimer timer = new SimpleTimer();
     private int dieAnts;
     private final int step = 1500;
     

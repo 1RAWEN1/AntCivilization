@@ -1,0 +1,13 @@
+#BlueJ class context
+comment0.target=Block
+comment1.params=
+comment1.target=Block()
+comment2.params=digger
+comment2.target=void\ dig(greenfoot.Actor)
+comment3.params=digger
+comment3.target=boolean\ canDig(greenfoot.Actor)
+comment4.params=
+comment4.target=void\ updateImage()
+comment5.params=
+comment5.target=void\ act()
+numComments=6

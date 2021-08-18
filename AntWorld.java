@@ -5,24 +5,19 @@ public class AntWorld extends World
 {
     public static final int SIZE = 620;
     
-    public static ArrayList<AntHill> homeArray;
-    /**
-     * Create a new world. It will be initialised with a few ant hills
-     * and food sources
-     */
+    public static ArrayList<AntHill> arrayOfHouses;
+
     public AntWorld()
     {
         super(SIZE, SIZE, 1);
-        homeArray=new ArrayList<AntHill>();
+        arrayOfHouses =new ArrayList<AntHill>();
         AntHill.teams=0;
-        setPaintOrder(Label.class, Scroller.class, QueenAnt.class, Egg.class, Ant.class, TakenFood.class, Pheromone.class, AttackPheromone.class, AntHill.class, Food.class, Stone.class, Block.class);
+        setPaintOrder(Label.class, Scroller.class, Counter.class, QueenAnt.class, Egg.class, Ant.class, TakenFood.class, Pheromone.class, AttackPheromone.class, AntHill.class, Food.class, Stone.class, Block.class);
         newWorld();
-        createStones();
-        createWinLabel();
     }
     
     private void newWorld(){
-        homeArray.clear();
+        arrayOfHouses.clear();
         AntHill.teams=0;
         
         int rand=Greenfoot.getRandomNumber(5)+2;
@@ -44,11 +39,23 @@ public class AntWorld extends World
         else if(rand==6){
             setup6();
         }
+        //randomGenerationOfWorld();
+        createStones();
+        createWinLabel();
     }
 
-    /**
-     * Create world contents: one ant hill and food.
-     */
+    public void randomGenerationOfWorld() {
+        removeObjects(getObjects(null));
+
+        for(int i=0;i<Greenfoot.getRandomNumber(3)+2;i++){
+            addObject(new AntHill(40), randomAntHillCoord(), randomAntHillCoord());
+        }
+
+        for(int i=0;i<Greenfoot.getRandomNumber(10)+5;i++){
+            addObject(new Food(), randomCoord(), randomCoord());
+        }
+    }
+
     public void setup1()
     {
         removeObjects(getObjects(null));  // remove all existing objects
@@ -61,9 +68,6 @@ public class AntWorld extends World
         addObject(new Food(), SIZE / 2 - 215, SIZE / 2 - 100);
     }
 
-    /**
-     * Create world contents: two ant hills and food.
-     */
     public void setup2()
     {
         removeObjects(getObjects(null));  // remove all existing objects
@@ -81,9 +85,6 @@ public class AntWorld extends World
         addObject(new Food(), 566, 529);
     }
 
-    /**
-     * Create world contents: two ant hills and food.
-     */
     public void setup3()
     {
         removeObjects(getObjects(null));  // remove all existing objects
@@ -159,7 +160,7 @@ public class AntWorld extends World
     public void createStones(){
         for(int i=0;i<2+Greenfoot.getRandomNumber(4);i++){
             Stone st=new Stone();
-            addObject(st,Greenfoot.getRandomNumber(getWidth()),Greenfoot.getRandomNumber(getHeight()));
+            addObject(st,randomCoord(),randomCoord());
         }
     }
     
@@ -169,12 +170,18 @@ public class AntWorld extends World
         winLabel=new Label("",30);
         addObject(winLabel, SIZE/2, SIZE/2);
         
-        sc=new Scroller(50);
+        sc=new Scroller(speed);
         addObject(sc,110,20);
     }
 
+    int coord;
+
     private int randomCoord(){
         return Greenfoot.getRandomNumber(SIZE);
+    }
+    private int randomAntHillCoord(){
+        coord=Greenfoot.getRandomNumber(SIZE);
+        return Math.abs(coord-(((coord+SIZE/2)/SIZE)*SIZE))<100 ? (100+(((coord+SIZE/2)/SIZE)*(SIZE-200))):coord;
     }
 
     private Food newFood;
@@ -187,33 +194,44 @@ public class AntWorld extends World
     
     public void analysis(){
         fullSoldiers=0;
-        for(AntHill ah:homeArray){
+        for(AntHill ah: arrayOfHouses){
             fullSoldiers+=ah.getSolNumber();
         }
         if(fullSoldiers==0){
             fullSoldiers=1;
         }
-        for(AntHill ah:homeArray){
+        for(AntHill ah: arrayOfHouses){
             ah.setChanceToWin((double)ah.getSolNumber()/fullSoldiers);
         }
     }
+
+    private int antsInWorld = 0;
+    
+    private static int speed = 50;
+
     public void act(){
         if(Greenfoot.getRandomNumber(200)==1){
             newFood=new Food((Greenfoot.getRandomNumber(Food.MAX_CRUMBS/3)+1)*3);
             addObject(newFood,randomCoord(),randomCoord());
-            newFood.addedToWorld();
+            newFood.removeIfTouchingStone();
         }
         
+        antsInWorld = 0;
         winTeam=-1;
-        analysis();
-        for(int i=0;i<homeArray.size();i++){
-             if(winTeam==-1 && homeArray.get(i).getAntNumber()>0 || homeArray.get(i).fully()){
-                winTeam=homeArray.get(i).getTeam();
+        //analysis();
+        for(int i = 0; i< arrayOfHouses.size(); i++){
+            antsInWorld += arrayOfHouses.get(i).getAntNumber();
+            if(winTeam==-1 && arrayOfHouses.get(i).getAntNumber()>0 || arrayOfHouses.get(i).fully()){
+                winTeam= arrayOfHouses.get(i).getTeam();
             }
-            else if(homeArray.get(i).getTeam()!=winTeam && homeArray.get(i).getAntNumber()>0){
+            else if(arrayOfHouses.get(i).getTeam()!=winTeam && arrayOfHouses.get(i).getAntNumber()>0){
                 winTeam=-1;
                 break;
             }
+        }
+        
+        if(antsInWorld==0){
+            winTeam=0;
         }
         
         if(winTeam!=-1){
@@ -230,7 +248,12 @@ public class AntWorld extends World
                 winLabel.setFillColor(Color.GREEN);
             }
             
-            winLabel.setValue("WINNER!");
+            if(winTeam!=0){
+                winLabel.setValue("WINNER!");
+            }
+            else{
+                winLabel.setValue("DRAWN!");
+            }
             winTimer.calculate();
             if(winTimer.getTime()>250){
                 newWorld();
@@ -248,8 +271,9 @@ public class AntWorld extends World
         newFood=null;
         }
         }*/
-        if(sc.getValue()>30){
-            Greenfoot.setSpeed(sc.getValue());
+        speed = sc.getValue();
+        if(speed>30){
+            Greenfoot.setSpeed(speed);
         }
     }
 }

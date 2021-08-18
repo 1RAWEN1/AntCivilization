@@ -1,31 +1,23 @@
 import greenfoot.*;  // (World, Actor, GreenfootImage, Greenfoot and MouseInfo)
 
-/**
- * Write a description of class Stone here.
- * 
- * @author (your name) 
- * @version (a version number or a date)
- */
-public class Stone extends Actor
+//renamed
+public class Stone extends Obs
 {
-    /**
-     * Act - do whatever the Stone wants to do. This method is called whenever
-     * the 'Act' or 'Run' button gets pressed in the environment.
-     */
-    boolean start=true;
-    public void addedToWorld(){
+    boolean start = true;
+
+    private void remove(){
         if(start){
-            if(getOneIntersectingObject(AntHill.class)!=null){
+            if(getOneIntersectingObject(AntHill.class) != null){
                 getWorld().removeObject(this);
             }
-            else if(getOneIntersectingObject(Food.class)!=null){
+            else if(getOneIntersectingObject(Food.class) != null){
                 getWorld().removeObject(this);
             }
-            start=false;
+            start = false;
         }
     }
     public void act() 
     {
-        addedToWorld();// Add your action code here.
+        remove();
     }    
 }

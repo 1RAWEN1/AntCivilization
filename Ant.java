@@ -49,6 +49,7 @@ public class Ant extends Creature
 
     public void act()
     {
+        razn=0;
         dTimer.calculate();
         if(!isUnderGround()){
             if(profession == 1){
@@ -218,10 +219,12 @@ public class Ant extends Creature
         }
         TakenFood touchingFood = (TakenFood)getOneIntersectingObject(TakenFood.class);
         if (touchingBlock!=null && !touchingBlock.canDig(this)
-        && Math.sqrt(Math.pow(getX()-getHomeHill().getX(),2)+Math.pow(getY()-getHomeHill().getY(),2))> viewingRadius) {
-            if(touchingFood==null || touchingFood.taken){
-                dropFood();
-            }
+        && Math.sqrt(Math.pow(getX()-getHomeHill().getX(),2)+Math.pow(getY()-getHomeHill().getY(),2)) > viewingRadius) {
+            dropFood();
+        }
+        else if(touchingFood != null && !touchingFood.taken
+        && Math.sqrt(Math.pow(getX() - touchingFood.getX(), 2) + Math.pow(getY() - touchingFood.getY(), 2)) < 4){
+            dropFood();
         }
         else if(tf.getWorld()==null){
             dropFood();

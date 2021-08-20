@@ -210,7 +210,7 @@ public class AntWorld extends World
     private static int speed = 50;
 
     public void act(){
-        if(Greenfoot.getRandomNumber(200)==1){
+        if(Greenfoot.getRandomNumber(600)==1){
             newFood=new Food((Greenfoot.getRandomNumber(Food.MAX_CRUMBS/3)+1)*3);
             addObject(newFood,randomCoord(),randomCoord());
             newFood.removeIfTouchingStone();

@@ -142,7 +142,7 @@ public class Creature  extends Live
     
     private boolean runPurposefully;
     
-    private int razn = 0;
+    public int razn = 0;
     
     private void turnWhenObsIsAhead(Actor obs){
         if(!runPurposefully){
@@ -229,7 +229,6 @@ public class Creature  extends Live
     private Obs touchingObs;
     public void walk()
     {
-        razn=0;
         startX = getX();
         startY = getY();
         rot = getRotation();
@@ -360,7 +359,7 @@ public class Creature  extends Live
         target = null;
     }
     
-    private final int dist=3;
+    private final int dist = SPEED;
     
     private int startx;
     private int starty;
@@ -373,9 +372,9 @@ public class Creature  extends Live
             startx = getX();
             starty = getY();
             
-            startRot = getRotation();
-            
             runningDirection %=360;
+            
+            startRot = runningDirection;
             if(leftHand){
                 turn(90);
                 move(dist);

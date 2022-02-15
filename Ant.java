@@ -44,7 +44,7 @@ public class Ant extends Creature
         
         setFood(3, 1);
         
-        needToCheck = (ArrayList<AntHill>)AntWorld.arrayOfHouses.clone();
+        needToCheck = new ArrayList<>(AntWorld.arrayOfHouses);
     }
 
     public void act()
@@ -123,7 +123,7 @@ public class Ant extends Creature
         }
     }
     
-    ArrayList<AntHill> needToCheck = new ArrayList<AntHill>();
+    ArrayList<AntHill> needToCheck = new ArrayList<>();
     AntHill enemyHome;
     
     boolean checked = false;
@@ -132,8 +132,8 @@ public class Ant extends Creature
         if(getObjectsInRange(viewingRadius, AntHill.class).size() > 0){
             enemyHome=getObjectsInRange(viewingRadius, AntHill.class).get(0);
             checked = true;
-            for(int i = 0;i < needToCheck.size();i++){
-                if(enemyHome == needToCheck.get(i)){
+            for(AntHill ah: needToCheck){
+                if(enemyHome == ah){
                     checked = false;
                     break;
                 }
@@ -397,7 +397,7 @@ public class Ant extends Creature
                 if (ph.getX() == getX() && ph.getY() == getY()) {
                     for(int i=0;i<getObjectsInRange(ph.getMaxIntensity()/3,Pheromone.class).size();i++){
                         smellPh=getObjectsInRange(ph.getMaxIntensity()/3,Pheromone.class).get(i);
-                        if(!intersects(smellPh) && smellPh.getIntensity()<ph.getIntensity()){
+                        if(!intersects(smellPh) && smellPh.getIntensity() < ph.getIntensity()){
                             nextPh=smellPh;
                             break;
                         }

@@ -1,5 +1,6 @@
 import greenfoot.*;  // (World, Actor, GreenfootImage, and Greenfoot)
- 
+import io.github.classgraph.json.JSONUtils;
+
 public class AntHill extends Actor
 {
     private Label chanceLabel;
@@ -11,10 +12,12 @@ public class AntHill extends Actor
     
     private int fullNumberOfAnts = 5;
     private int ants = 0;
-    
+
     private int soldiers = 0;
+
+    private int nurses = 0;
     
-    private int maxAnts = 40;
+    private final int maxAnts = 35;
 
     private Counter foodCounter;
     
@@ -23,8 +26,12 @@ public class AntHill extends Actor
     private int food;
     
     private final int MAX_FOOD=100;
-    
-    private boolean haveQueen=true;
+
+    private int eggs;
+
+    private int endurance = 0;
+
+    private final int MAX_ENDURANCE = 2500;
     
     public AntHill()
     {
@@ -33,16 +40,50 @@ public class AntHill extends Actor
 
     public AntHill(int numberOfAnts)
     {
-        maxAnts = numberOfAnts;
         teams++;
         teamNum=teams;
+        AntWorld.arrayOfHouses.add(this);
+    }
+
+    boolean createWithoutQueen = false;
+    public AntHill(int numberOfAnts, boolean createWithoutQueen)
+    {
+        this.createWithoutQueen = createWithoutQueen;
+        if(createWithoutQueen) {
+            queens = 0;
+            fullNumberOfAnts = 0;
+        }
+
+        teams++;
+        teamNum=teams;
+        AntWorld.arrayOfHouses.add(this);
+    }
+
+    public AntHill(int numberOfAnts, boolean createWithoutQueen, int team)
+    {
+        this.createWithoutQueen = createWithoutQueen;
+        if(createWithoutQueen) {
+            queens = 0;
+            fullNumberOfAnts = 0;
+        }
+
+        teamNum=team;
+        teams = Math.max(teamNum, teams);
         AntWorld.arrayOfHouses.add(this);
     }
     
     public AntHill(int numberOfAnts, int team)
     {
-        maxAnts = numberOfAnts;
         teamNum=team;
+        teams = Math.max(teamNum, teams);
+        AntWorld.arrayOfHouses.add(this);
+    }
+
+    public AntHill(int numberOfAnts, int team, int queens)
+    {
+        teamNum=team;
+        teams = Math.max(teamNum, teams);
+        this.queens = queens;
         AntWorld.arrayOfHouses.add(this);
     }
     
@@ -51,6 +92,8 @@ public class AntHill extends Actor
     }
     
     private final int BLOCK_SIZE=20;
+
+    int queens = 1;
     public void createUnderground(){
         // || Math.abs(4-x)+Math.abs(4-y)==1
         //        || 4>Math.abs(4-y) && Math.abs(4-y)>1 && Math.abs(4-x)<=1 || 4>Math.abs(4-x) && Math.abs(4-x)>1 && Math.abs(4-y)<=1
@@ -62,7 +105,7 @@ public class AntHill extends Actor
                     
                 }
                 else{
-                    getWorld().addObject(new Block(),getX()-BLOCK_SIZE+(5-x)*BLOCK_SIZE,getY()-BLOCK_SIZE+(5-y)*BLOCK_SIZE);
+                    getWorld().addObject(new Block(x, y),getX()-BLOCK_SIZE+(5-x)*BLOCK_SIZE,getY()-BLOCK_SIZE+(5-y)*BLOCK_SIZE);
                 }
             }
         }
@@ -70,12 +113,17 @@ public class AntHill extends Actor
         //getWorld().addObject(new Warehouse(this), getX(), getY()+50);
         //getWorld().addObject(new Warehouse(this), getX()+50, getY());
         //getWorld().addObject(new Warehouse(this), getX()-50, getY());
-        
-        getWorld().addObject(new QueenAnt(this),getX(),getY());
-        
-        for(int i=0;i<fullNumberOfAnts;i++){
-            //getWorld().addObject(new Ant(this),getX()-20,getY()-55);
-            createNewAnt(new Ant(this));
+
+        if(!createWithoutQueen) {
+            for (int i = 0; i < fullNumberOfAnts; i++) {
+                //getWorld().addObject(new Ant(this),getX()-20,getY()-55);
+                createNewAnt(new Ant(this));
+            }
+
+            for (int i = 0; i < queens; i++) {
+                getWorld().addObject(new QueenAnt(this), getX(), getY());
+                fullNumberOfAnts++;
+            }
         }
         
         countAnts();
@@ -84,7 +132,9 @@ public class AntHill extends Actor
     public void createNewAnt(Ant ant){
         if(ant.getProfession()==2){
             newSoldier();
-        } 
+        } else if(ant.getProfession()==3){
+            newNurse();
+        }
         getWorld().addObject(ant ,getX(),getY());
     }
     
@@ -93,9 +143,46 @@ public class AntHill extends Actor
         countAnts();
         if(ant.getProfession()==2){
             newSoldier();
-        } 
+        } else if(ant.getProfession()==3){
+            newNurse();
+        }
     }
-    
+
+    public void newAnt(){
+        fullNumberOfAnts++;
+        countAnts();
+    }
+
+    private int princesses;
+    public void newPrincess(){
+        fullNumberOfAnts++;
+        princesses++;
+        countAnts();
+    }
+
+    public void newQueen1(){
+        princesses--;
+        queens++;
+    }
+
+    public void newQueen(){
+        fullNumberOfAnts++;
+        queens++;
+        countAnts();
+    }
+
+    private int princes;
+    public void newPrince(){
+        fullNumberOfAnts++;
+        princes++;
+        countAnts();
+    }
+
+    public void setTeam(int team){
+        teamNum = team;
+        teams = Math.max(teamNum, teams);
+    }
+
     public int getTeam(){
         return teamNum;
     }
@@ -108,8 +195,8 @@ public class AntHill extends Actor
         return soldiers;
     }
     
-    public int getNeutralAnts(){
-        return fullNumberOfAnts-soldiers;
+    public int getWorkerNumber(){
+        return fullNumberOfAnts - soldiers - nurses - queens - princes - princesses;
     }
     
     public void setChanceToWin(double chance){
@@ -117,35 +204,46 @@ public class AntHill extends Actor
     }
     
     public boolean fully(){
-        return fullNumberOfAnts==maxAnts;
+        return fullNumberOfAnts>=maxAnts;
     }
     
     public void newSoldier(){
         soldiers++;
+    }
+
+    public void newNurse(){
+        nurses++;
+    }
+
+    public int getNurseNumber(){
+        return nurses;
     }
     
     public int getFood(){
         return food;
     }
     
-    private void updateImage(){
+    /*private void updateImage(){
         GreenfootImage image=new GreenfootImage(getImage().getWidth()+3,getImage().getHeight()+3);
         image.setColor(Color.BLUE);
         image.fillOval(0,0,image.getWidth()-1,image.getHeight()-1);
         image.drawImage(getImage(),1,1);
         setImage(image);
-    }
+    }*/
 
     boolean start=true;
     public void act()
     {
         if(start){
             createUnderground();
+            updateImage();
             
             start=false;
         }
         
         drawChance();
+
+        countFood();
     }
 
     public void drawChance(){
@@ -156,49 +254,58 @@ public class AntHill extends Actor
             int y = getY() - getImage().getWidth()/2 - 8;
 
             getWorld().addObject(chanceLabel, x, y);
-            if(getTeam()==1){
-                chanceLabel.setFillColor(Color.BLUE);
-            }
-            else if(getTeam()==2){
-                chanceLabel.setFillColor(Color.CYAN);
-            }
-            else if(getTeam()==3){
-                chanceLabel.setFillColor(Color.YELLOW);
-            }
-            else if(getTeam()==4){
-                chanceLabel.setFillColor(Color.GREEN);
-            }
+            chanceLabel.setFillColor(AntWorld.teamColors.get(getTeam() - 1));
         }
+        chanceLabel.setFillColor(AntWorld.teamColors.get(getTeam() - 1));
         
         chanceLabel.setValue("AntHill "+getTeam());
     }
     
-    public void countFood()
+    public void countFood(int energy)
     {
         if(foodCounter == null) 
         {
             foodCounter = new Counter("Food: ");
             int x = getX();
-            int y = getY() + getImage().getWidth()/2 + 20;
+            int y = getY() + 26 + 20;
 
             getWorld().addObject(foodCounter, x, y);
         }     
-        food++;
+        food+=energy;
         foodCounter.setValue(food);
         foodCounter.draw();
     }
     
-    public void eatFood()
+    public void eatFood(int energy)
     {
         if(foodCounter == null) 
         {
             foodCounter = new Counter("Food: ");
             int x = getX();
-            int y = getY() + getImage().getWidth()/2 + 20;
+            int y = getY() + 26 + 20;
 
             getWorld().addObject(foodCounter, x, y);
         }     
-        food--;
+        food-=energy;
+        foodCounter.setValue(food);
+        foodCounter.draw();
+    }
+
+    public void countFood(){
+        if(foodCounter == null)
+        {
+            foodCounter = new Counter("Food: ");
+            int x = getX();
+            int y = getY() + 26 + 20;
+
+            getWorld().addObject(foodCounter, x, y);
+        }
+        food = 0;
+        getObjectsInRange(100, TakenFood.class).forEach((tf) -> {
+            if(!tf.taken && tf.underGround){
+                food += tf.energyCost;
+            }
+        });
         foodCounter.setValue(food);
         foodCounter.draw();
     }
@@ -208,7 +315,7 @@ public class AntHill extends Actor
         {
             antCounter = new Counter("Ants: ");
             int x = getX();
-            int y = getY() + getImage().getWidth()/2 + 8;
+            int y = getY() + 26 + 8;
 
             getWorld().addObject(antCounter, x, y);
         }     
@@ -238,11 +345,13 @@ public class AntHill extends Actor
     }
     
     public boolean haveQueen(){
-        return haveQueen;
+        return queens > 0;
     }
     
     public void queenDead(){
-        haveQueen=false;
+        fullNumberOfAnts--;
+        queens--;
+        countAnts();
     }
     
     public void soldierDead(){
@@ -254,5 +363,70 @@ public class AntHill extends Actor
     public void antDead(){
         fullNumberOfAnts--;
         countAnts();
+    }
+
+    public void nurseDead(){
+        fullNumberOfAnts--;
+        nurses--;
+        countAnts();
+    }
+
+    public void princeDead(){
+        fullNumberOfAnts--;
+        princes--;
+        countAnts();
+    }
+
+    public void princessDead(){
+        fullNumberOfAnts--;
+        princesses--;
+        countAnts();
+    }
+
+    public void reduceNurse(){
+        nurses--;
+    }
+
+    private int eggsFood;
+    public void newEgg(int eggFood){
+        eggs ++;
+        eggsFood += eggFood;
+    }
+
+    public void reduseEgg(int eggFood){
+        eggs --;
+        eggsFood -= eggFood;
+    }
+
+    public void countEndurance(){
+        if(endurance < MAX_ENDURANCE) {
+            endurance++;
+            updateImage();
+        }
+    }
+
+    GreenfootImage antHill = new GreenfootImage("anthill.png");
+    GreenfootImage antHill1 = new GreenfootImage("anthill1.png");
+    GreenfootImage image;
+    final int IMAGE_SIZE = 6;
+    private void generateMainImage(){
+        image = new GreenfootImage(IMAGE_SIZE, IMAGE_SIZE);
+        image.drawImage(antHill, (IMAGE_SIZE / 2) - antHill.getWidth() / 2, (IMAGE_SIZE / 2) - antHill.getHeight() / 2);
+    }
+
+    private void updateImage(){
+        /*if(image == null){
+            generateMainImage();
+        }*/
+
+        int s = (int)(Math.pow(IMAGE_SIZE, 2) * Math.PI);
+        s += endurance;
+        int r = (int)Math.sqrt(s / Math.PI);
+        antHill = new GreenfootImage("anthill.png");
+        GreenfootImage myImage = new GreenfootImage(Math.max(IMAGE_SIZE, r * 2), Math.max(IMAGE_SIZE, (int)(((double)(r * 2) / antHill.getWidth()) * antHill.getHeight())));
+        antHill.scale(myImage.getWidth(), myImage.getHeight());
+        myImage.drawImage(antHill, 0, 0);
+        myImage.drawImage(antHill1, (myImage.getWidth() / 2) - (IMAGE_SIZE / 2), (myImage.getHeight() / 2) - (IMAGE_SIZE / 2));
+        setImage(myImage);
     }
 }

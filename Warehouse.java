@@ -41,14 +41,14 @@ public class Warehouse extends Actor
     
     public void addFood(){
         crumbs++;
-        home.countFood();
+        home.countFood(1);
         updateImage();
     }
     
     public void takeSome()
     {
         crumbs--;
-        home.eatFood();
+        home.eatFood(1);
         updateImage();
     }
     

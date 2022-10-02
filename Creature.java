@@ -3,7 +3,7 @@ import greenfoot.*;  // (World, Actor, GreenfootImage, Greenfoot and MouseInfo)
 //renamed
 public class Creature  extends Live
 {
-    public final int SPEED = 3;
+    public int SPEED = 3;
 
     private int deltaX;
     private int deltaY;
@@ -18,22 +18,51 @@ public class Creature  extends Live
         deltaX = 0;
         deltaY = 0;
     }
-    
+
+    public Actor getTakenObject(){
+        return takenObject;
+    }
+
     public void take(Actor obj){
-        takenObject = obj;
+        if(takenObject == null)
+            takenObject = obj;
     }
     
     public void carry(){
-        if(takenObject != null){
-            takenObject.setRotation(getRotation());
-            takenObject.setLocation(getX() + (int) ((1 + getImage().getWidth() / 2) * Math.cos(Math.toRadians(getRotation())))
-            , getY() + (int) ((1 + getImage().getWidth() / 2) * Math.sin(Math.toRadians(getRotation()))));
+        if(takenObject != null && takenObject.getWorld() != null) {
+            if (cof1 == 1) {
+                takenObject.setRotation(getRotation());
+                takenObject.setLocation(getX() + (int) ((getImage().getWidth() / 2) * Math.cos(Math.toRadians(getRotation())))
+                        , getY() + (int) ((getImage().getWidth() / 2) * Math.sin(Math.toRadians(getRotation()))));
+            } else {
+                turnTowards(takenObject);
+
+                takenObject.setLocation(takenObject.getX() + deltaX, takenObject.getY() + deltaY);
+            }
         }
+    }
+
+    public void setSpeed(int speed){
+        SPEED = speed;
     }
     
     public void put(){
-        takenObject.setLocation(getX(), getY());
-        takenObject = null;
+        /*if(takenObject != null && getClass().equals(Ant.class) && takenObject.getClass().equals(TakenGround.class)){
+            System.out.println(takenObject.getClass() + " " + this);
+            Greenfoot.stop();
+        }*/
+        if(takenObject != null && cof1 == 1) {
+            takenObject.setLocation(getX(), getY());
+            takenObject = null;
+        }
+        else if(takenObject != null){
+            takenObject = null;
+        }
+    }
+
+
+    public boolean haveTakenObject(){
+        return takenObject != null;
     }
     
     public void remove(){
@@ -43,6 +72,7 @@ public class Creature  extends Live
 
     public void randomWalk()
     {
+        // && getRotation() == secondRot || randomChance(50) && Math.abs(secondRot) + getRotation() == 360
         if (randomChance(50)) {
             deltaX = adjustSpeed(deltaX);
             deltaY = adjustSpeed(deltaY);
@@ -69,7 +99,7 @@ public class Creature  extends Live
         if(getHomeHill() == null) {
             return;
         }
-        if (randomChance(30)) {
+        if (randomChance(50)) {
             randomWalk();
         }
         else {
@@ -80,8 +110,19 @@ public class Creature  extends Live
         }
     }
 
+    int lastX;
+    int lastY;
+    boolean moved;
     public boolean moved(){
-        return deltaX != 0 || deltaY != 0;
+        moved = lastX != getX() || lastY != getY();
+        lastX = getX();
+        lastY = getY();
+        return moved;
+    }
+
+    public boolean moved1(){
+        moved = lastX != getX() || lastY != getY();
+        return moved;
     }
 
     public void headTowards(int x, int y){
@@ -95,6 +136,10 @@ public class Creature  extends Live
             deltaX = capSpeed(target.getX() - getX());
             deltaY = capSpeed(target.getY() - getY());
         }
+    }
+
+    public Actor getTarget(){
+        return target;
     }
     
     public void turnTowards(Actor target){
@@ -143,28 +188,46 @@ public class Creature  extends Live
     private boolean runPurposefully;
     
     public int razn = 0;
-    
+
+    private int myRot;
     private void turnWhenObsIsAhead(Actor obs){
         if(!runPurposefully){
+            myRot = getRotation();
             runPurposefully = true;
 
-            if(target != null){
-                turnTowards(target);
+            startx = getX();
+            starty = getY();
+            /*if(startDeltaX != 0 && startDeltaY != 0){
+                turnTowards(startX + startDeltaX, startY + startDeltaY);
                 rot = getRotation();
                 runningDirection = ((rot + 45) / 90) * 90;
-                setRotation(0);
+                setRotation(myRot);
             }
-            else if(obs != touchingBlock){
+            else*/// if(obs != touchingBlock){
                 turnTowards(obs);
                 rot = getRotation();
                 runningDirection = ((rot + 45) / 90) * 90;
-                setRotation(0);
-            }
+                setRotation(myRot);
+
+                runningDirection %= 360;
+
+                if(startDeltaX != 0 || startDeltaY != 0){
+                    rot = (int) (180 * Math.atan2(startDeltaY, startDeltaX) / Math.PI);
+                    rot += 360;
+                    rot %= 360;
+                }
+            /*}
             else {
                 runningDirection = Greenfoot.getRandomNumber(4)*90;
-            }
-            leftHand = rot < runningDirection;
-            
+            }*/
+            if(isUnderGround() || !haveTakenObject())
+                leftHand = rot < runningDirection && Math.abs(rot - runningDirection) < 180
+                        || rot > runningDirection && Math.abs(rot - runningDirection) > 180
+                        || Math.abs(rot - runningDirection) == 180 && Greenfoot.getRandomNumber(2) == 1
+                        || rot == runningDirection && Greenfoot.getRandomNumber(2) == 1;
+            else
+                leftHand = Greenfoot.getRandomNumber(2) == 1;
+
             setLocation(startX + (int) (Math.cos(Math.toRadians(runningDirection)) * SPEED), startY + (int) (Math.sin(Math.toRadians(runningDirection)) * SPEED));
             
             if(leftHand){
@@ -183,6 +246,8 @@ public class Creature  extends Live
                     sum++;
                 }
             }
+
+            setLocation(startx, starty);
             
             if(sum == 0 && !isUnderGround()){
                 runPurposefully = false;
@@ -201,108 +266,206 @@ public class Creature  extends Live
             }
         }
     }
-    
+
     public void purposefulWalk(){
-        
+        if(isFly()){
+            SPEED = 6;
+        }
+        else{
+            SPEED = 3;
+        }
         if(target != null && target.getWorld() == null){
             target = null;
         }
         //try{
-            if(target != null && intersects(target) || !isUnderGround() && sum == 0){
-                if(target != null && intersects(target)){
+        if(!stop && !moved1()) {
+            if (target != null && intersects(target) || !isUnderGround() && sum == 0) {
+                if (target != null && intersects(target)) {
                     atTarget();
                 }
                 walk();
-            }
-            else{
+            } else {
                 turnInMaze();
             }
+
+            if(haveTakenObject()){
+                carry();
+            }
+        }
+        else{
+            stop = false;
+        }
         //}catch(Exception e){System.out.println(target+" "+target.getWorld());Greenfoot.stop();}
     }
-    
+
     private void isAtEdgeOfTheWorld(){
         runningDirection += 180;
         leftHand = !leftHand;
     }
+
+    boolean stop;
+    public void stop(){
+        stop = true;
+    }
     
     Block touchingBlock;
     private Obs touchingObs;
+
+    //int secondRot;
+    boolean canDig = true;
+
+    public void setCanDig(boolean canDig){
+        this.canDig = canDig;
+    }
+
+    double cof1 = 1;
+    private int startDeltaX;
+    private int startDeltaY;
     public void walk()
     {
         startX = getX();
         startY = getY();
         rot = getRotation();
-        setRotation(0);
-        
+        startDeltaX = deltaX;
+        startDeltaY = deltaY;
+
+        touchingBlock = null;
+        touchingObs = null;
+
+        if(deltaX != 0 || deltaY != 0) {
+            setRotation((int) (180 * Math.atan2(deltaY, deltaX) / Math.PI));
+        }
+        setRotation(((getRotation() + 45) / 90) * 90);
+        updateSize();
+
+        cof1 = 1;
+
+        if(takenObject != null){
+            cof1 = Math.min(1, (double)getImage().getWidth() / takenObject.getImage().getWidth());
+            deltaX *= cof1;
+            deltaY *= cof1;
+        }
+
         setLocation(startX + deltaX, startY);
         if(!isUnderGround()){
-            touchingObs = null;
-            if(isTouching(Obs.class)){
-                deltaX = 0;
-                deltaY = needSpeed(deltaY);
+            if(isTouching(Obs.class) && !isFly()){
                 touchingObs = (Obs) getOneIntersectingObject(Obs.class);
-            }
-            
-            setLocation(startX + deltaX,startY + deltaY);
-            if(isTouching(Obs.class)){
-                deltaY = 0;
-                if(touchingObs == null){
-                    deltaX = needSpeed(deltaX);
-                    touchingObs = (Obs) getOneIntersectingObject(Obs.class);
+                touchObs();
+                deltaX = getX() - startX;
+                deltaY = needSpeed(deltaY);
+
+                if(deltaX != 0 || deltaY != 0) {
+                    setRotation((int) (180 * Math.atan2(deltaY, deltaX) / Math.PI));
                 }
+                setRotation(((getRotation() + 45) / 90) * 90);
+                updateSize();
             }
             
-            if(touchingObs != null){
-                turnWhenObsIsAhead(touchingObs);
+            setLocation(getX(),startY + deltaY);
+            if(isTouching(Obs.class) && !isFly()){
+                if(touchingObs == null){
+                    touchingObs = (Obs) getOneIntersectingObject(Obs.class);
+                    deltaX = needSpeed(deltaX);
+                }
+                touchObs();
+                deltaY = getY() - startY;
+
+                if(deltaX != 0 || deltaY != 0) {
+                    setRotation((int) (180 * Math.atan2(deltaY, deltaX) / Math.PI));
+                }
+                setRotation(((getRotation() + 45) / 90) * 90);
+                updateSize();
             }
         }
         else{
-            touchingBlock = null;
-            if(isTouching(UndergroundObs.class)){
-                deltaX = 0;
-                deltaY = needSpeed(deltaY);
+            if(isTouching(UndergroundObs.class) && !isFly()){
                 touchingBlock = (Block) getOneIntersectingObject(Block.class);
-            }
-            
-            setLocation(startX + deltaX,startY + deltaY);
-            if(isTouching(UndergroundObs.class)){
-                deltaY = 0;
-                if(touchingBlock == null){
-                    deltaX = needSpeed(deltaX);
-                    touchingBlock = (Block) getOneIntersectingObject(Block.class);
+                touchObs();
+                deltaX = getX() - startX;
+                deltaY = needSpeed(deltaY);
+
+                if(deltaX != 0 || deltaY != 0) {
+                    setRotation((int) (180 * Math.atan2(deltaY, deltaX) / Math.PI));
                 }
+                setRotation(((getRotation() + 45) / 90) * 90);
+                updateSize();
             }
-            
-            if(touchingBlock != null){
-                if(touchingBlock.canDig(this)){
+
+            setLocation(getX(),startY + deltaY);
+            if(isTouching(UndergroundObs.class) && !isFly()){
+                if(touchingBlock == null){
+                    touchingBlock = (Block) getOneIntersectingObject(Block.class);
+                    deltaX = needSpeed(deltaX);
+                }
+                touchObs();
+                deltaY = getY() - startY;
+
+                if(deltaX != 0 || deltaY != 0) {
+                    setRotation((int) (180 * Math.atan2(deltaY, deltaX) / Math.PI));
+                }
+                setRotation(((getRotation() + 45) / 90) * 90);
+                updateSize();
+            }
+        }
+
+        setLocation(startX + deltaX, getY());
+
+        if(!isFly()) {
+            /*if (isUnderGround() && isTouching(UndergroundObs.class)) {
+                touchingBlock = (Block) getOneIntersectingObject(Block.class);
+                if(touchingBlock.canDig(this) && canDig && !haveTakenObject()){
                     touchingBlock.dig(this);
+                    deltaX = 0;
+                    deltaY = 0;
                 }
                 else{
                     turnWhenObsIsAhead(touchingBlock);
                 }
+                touchObs();
+            }
+            else if(!isUnderGround() && isTouching(Obs.class)){
+                touchingObs = (Obs) getOneIntersectingObject(Obs.class);
+                turnWhenObsIsAhead(touchingObs);
+                touchObs();
+            }*/
+            if (isUnderGround() && isTouching(UndergroundObs.class) || !isUnderGround() && isTouching(Obs.class)) {
+                touchObs();
             }
         }
-        
-        setLocation(startX + deltaX,startY + deltaY);
-        
-        if(isUnderGround() && isTouching(UndergroundObs.class)){
-            deltaX=0;
-            deltaY=0;
-            setLocation(startX,startY);
+
+        if(touchingBlock != null){
+            if(touchingBlock.canDig(this) && canDig && !haveTakenObject()){
+                touchingBlock.dig(this);
+                deltaX = 0;
+                deltaY = 0;
+            }
+            else{
+                turnWhenObsIsAhead(touchingBlock);
+            }
         }
-        else if(!isUnderGround() && isTouching(Obs.class)){
-            deltaX=0;
-            deltaY=0;
-            setLocation(startX,startY);
+        else if(touchingObs != null){
+            turnWhenObsIsAhead(touchingObs);
+        }
+        /*if(isUnderGround() && isTouching(UndergroundObs.class)){
+            getImage().setColor(Color.RED);
+            getImage().fill();
+            Greenfoot.stop();
+        }*/
+
+        if (deltaX != 0 || deltaY != 0) {
+            /*secondRot = (int) (180 * Math.atan2(deltaY, deltaX) / Math.PI);
+            if (rot != secondRot) {
+                rot = spin(rot, secondRot);
+
+                if (rot != secondRot) {
+                    setLocation(startX, startY);
+                }
+            }*/
+            rot = (int) (180 * Math.atan2(deltaY, deltaX) / Math.PI);
         }
 
-        if(deltaX == 0 && deltaY == 0){
-            setRotation(rot);
-        }
-        else{
-            setRotation((int) (180 * Math.atan2(deltaY, deltaX) / Math.PI));
-        }
-        
+        setRotation(rot);
+
         if(touchingBlock != null && touchingBlock.getWorld() != null && touchingBlock.canDig(this)){
             turnTowards(touchingBlock);
         }
@@ -310,6 +473,163 @@ public class Creature  extends Live
         if(isAtEdge()){
             setCof(cof * -1);
         }
+    }
+
+    public void updateSize(){
+        if(getRotation() == 0 || getRotation() == 180){
+            imageXSize = (getImage().getWidth() % 2) + (getImage().getWidth() / 2);
+            imageYSize = (getImage().getHeight() % 2) + (getImage().getHeight() / 2);
+        }
+        else{
+            imageYSize = (getImage().getWidth() % 2) + (getImage().getWidth() / 2);
+            imageXSize = (getImage().getHeight() % 2) + (getImage().getHeight() / 2);
+        }
+    }
+
+    int x;
+    int y;
+    int changeXLoc;
+    int changeYLoc;
+
+    int changeXLoc1;
+    int changeYLoc1;
+
+    int imageXSize;
+    int imageYSize;
+
+    public void touchObs(){
+        if(isUnderGround() && isTouching(UndergroundObs.class)) {
+            x = getX();
+            y = getY();
+            changeXLoc = 0;
+            changeYLoc = 0;
+            for (UndergroundObs uo : getIntersectingObjects(UndergroundObs.class)) {
+                changeXLoc1 = (uo.getImage().getWidth() / 2) + imageXSize - Math.abs(getX() - uo.getX());
+
+                changeYLoc1 = (uo.getImage().getHeight() / 2) + imageYSize - Math.abs(getY() - uo.getY());
+
+                if (changeXLoc1 <= changeYLoc1 && changeXLoc1 > 0) {
+                    changeYLoc1 = 0;
+                } else if (changeXLoc1 > changeYLoc1 && changeYLoc1 > 0) {
+                    changeXLoc1 = 0;
+                }
+
+                changeXLoc = Math.abs(changeXLoc) > changeXLoc1 ? changeXLoc : changeXLoc1;
+                changeYLoc = Math.abs(changeYLoc) > changeYLoc1 ? changeYLoc : changeYLoc1;
+
+                if (uo.getX() > getX() && changeXLoc == changeXLoc1) {
+                    changeXLoc = -changeXLoc1;
+                }
+                if (uo.getY() > getY() && changeYLoc == changeYLoc1) {
+                    changeYLoc = -changeYLoc1;
+                }
+            }
+
+            setLocation(x + changeXLoc, y + changeYLoc);
+        }
+        else if(!isUnderGround() && isTouching(Obs.class)){
+            x=getX();
+            y=getY();
+            changeXLoc = 0;
+            changeYLoc = 0;
+            for (Obs o : getIntersectingObjects(Obs.class)) {
+                changeXLoc1 = (o.getImage().getWidth() / 2) + imageXSize - Math.abs(getX() - o.getX());
+
+                changeYLoc1 = (o.getImage().getHeight() / 2) + imageYSize - Math.abs(getY() - o.getY());
+
+                if (changeXLoc1 <= changeYLoc1 && changeXLoc1 > 0) {
+                    changeYLoc1 = 0;
+                } else if (changeXLoc1 > changeYLoc1 && changeYLoc1 > 0) {
+                    changeXLoc1 = 0;
+                }
+
+                changeXLoc = Math.abs(changeXLoc) > changeXLoc1 ? changeXLoc : changeXLoc1;
+                changeYLoc = Math.abs(changeYLoc) > changeYLoc1 ? changeYLoc : changeYLoc1;
+
+                if (o.getX() > getX() && changeXLoc == changeXLoc1) {
+                    changeXLoc = -changeXLoc1;
+                }
+                if (o.getY() > getY() && changeYLoc == changeYLoc1) {
+                    changeYLoc = -changeYLoc1;
+                }
+            }
+
+            setLocation(x + changeXLoc, y + changeYLoc);
+
+            //deltaX = getX() - startX;
+            //deltaY = getY() - startY;
+        }
+    }
+    public void touchObsX(){
+        x=getX();
+        changeXLoc = 0;
+        if(isUnderGround()) {
+            for (UndergroundObs uo : getIntersectingObjects(UndergroundObs.class)) {
+                changeXLoc1 = (uo.getImage().getWidth() / 2) + imageXSize - Math.abs(getX() - uo.getX()) + 1;
+
+                changeXLoc = Math.abs(changeXLoc) > changeXLoc1 ? changeXLoc : changeXLoc1;
+
+                if (uo.getX() > getX() && changeXLoc == changeXLoc1) {
+                    changeXLoc = -changeXLoc1;
+                }
+            }
+        }
+        else{
+            for (Obs o : getIntersectingObjects(Obs.class)) {
+                changeXLoc1 = (o.getImage().getWidth() / 2) + imageXSize - Math.abs(getX() - o.getX()) + 1;
+
+                changeXLoc = Math.abs(changeXLoc) > changeXLoc1 ? changeXLoc : changeXLoc1;
+
+                if (o.getX() > getX() && changeXLoc == changeXLoc1) {
+                    changeXLoc = -changeXLoc1;
+                }
+            }
+        }
+
+        setLocation(x + changeXLoc, getY());
+    }
+
+    public void touchObsY(){
+        y=getY();
+        changeYLoc = 0;
+        if(isUnderGround()) {
+            for (UndergroundObs uo : getIntersectingObjects(UndergroundObs.class)) {
+                changeYLoc1 = (uo.getImage().getHeight() / 2) + imageYSize - Math.abs(getY() - uo.getY());
+
+                changeYLoc = Math.abs(changeYLoc) > changeYLoc1 ? changeYLoc : changeYLoc1;
+
+                if (uo.getY() > getY() && changeYLoc == changeYLoc1) {
+                    changeYLoc = -changeYLoc1;
+                }
+            }
+        }
+        else{
+            for (Obs o : getIntersectingObjects(Obs.class)) {
+                changeYLoc1 = (o.getImage().getHeight() / 2) + imageYSize - Math.abs(getY() - o.getY());
+
+                changeYLoc = Math.abs(changeYLoc) > changeYLoc1 ? changeYLoc : changeYLoc1;
+
+                if (o.getY() > getY() && changeYLoc == changeYLoc1) {
+                    changeYLoc = -changeYLoc1;
+                }
+            }
+        }
+
+        setLocation(getX(), y + changeYLoc);
+    }
+
+    public int spin(int myRot1, int needRot){
+        int myRot = myRot1;
+        if(Math.abs(myRot - needRot) < SPEED * 2 || Math.abs(myRot - needRot) > 360 - (SPEED * 2)){
+            myRot = needRot;
+        }
+        else if(myRot > needRot && myRot - needRot <= 180|| needRot - myRot > 180){
+            myRot -= SPEED * 2;
+        }
+        else{
+            myRot += SPEED * 2;
+        }
+        return myRot;
     }
 
     public boolean haveImpulse() {
@@ -372,9 +692,10 @@ public class Creature  extends Live
             startx = getX();
             starty = getY();
             
-            runningDirection %=360;
+            runningDirection %= 360;
             
             startRot = runningDirection;
+            setRotation(runningDirection);
             if(leftHand){
                 turn(90);
                 move(dist);
@@ -383,7 +704,7 @@ public class Creature  extends Live
                 
                 setLocation(startx,starty);
                 setRotation(startRot);
-                move(-getImage().getWidth());
+                move(-SPEED);
                 boolean tObs2 = getOneIntersectingObject(UndergroundObs.class) != null;
                 boolean tObsBack = getOneIntersectingObject(Obs.class) != null;
                 turn(90);
@@ -398,6 +719,11 @@ public class Creature  extends Live
                     runningDirection += 90;
                     sum++;
                 }
+
+                if(!tObs1 && !tObs2 && !tObs3 && isUnderGround()
+                        || !tObsLeft && !tObsBack && !tObsLeftBack && !isUnderGround()){
+                    atTarget();
+                }
             }
             else{
                 turn(-90);
@@ -407,7 +733,7 @@ public class Creature  extends Live
                 
                 setLocation(startx, starty);
                 setRotation(startRot);
-                move(-getImage().getWidth());
+                move(-SPEED);
                 boolean tObs2 = getOneIntersectingObject(UndergroundObs.class) != null;
                 boolean tObsBack = getOneIntersectingObject(Obs.class) != null;
                 turn(-90);
@@ -421,6 +747,11 @@ public class Creature  extends Live
                 || !tObsLeft && !tObsBack && tObsLeftBack && !isUnderGround()){
                     runningDirection -= 90;
                     sum--;
+                }
+
+                if(!tObs1 && !tObs2 && !tObs3 && isUnderGround()
+                        || !tObsLeft && !tObsBack && !tObsLeftBack && !isUnderGround()){
+                    atTarget();
                 }
             }
         

@@ -15,6 +15,9 @@ public class Stone extends Obs
             }
             start = false;
         }
+
+        //getImage().setColor(Color.RED);
+        //getImage().drawRect(0,0,getImage().getWidth() - 1, getImage().getHeight() - 1);
     }
     public void act() 
     {

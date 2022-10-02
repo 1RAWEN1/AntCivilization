@@ -4,20 +4,23 @@ public class Pheromone extends Actor
 {
     private int maxIntensity = 180;
     private int intensity;
+
+    private int time;
+    private final SimpleTimer timer = new SimpleTimer();
     
     /**
      * Create a new drop of pheromone with full intensity.
      */
     public Pheromone()
     {
-        intensity = maxIntensity;
+        time = 500;
         updateImage();
     }
     
-    public Pheromone(int intensity)
+    public Pheromone(int intensity, int time)
     {
-        this.intensity = intensity;
-        maxIntensity = this.intensity;
+        this.time = time;
+        maxIntensity = intensity;
         updateImage();
     }
 
@@ -26,8 +29,10 @@ public class Pheromone extends Actor
      */
     public void act()
     {
-        intensity -= 1;
-        if (intensity <= 0) {
+        timer.calculate();
+        //intensity -= 1;
+        intensity = (int)(((double)(time - timer.getTime()) / time) * maxIntensity);
+        if (timer.getTime() > time) {
             getWorld().removeObject(this);
         }
         else {

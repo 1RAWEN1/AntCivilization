@@ -58,6 +58,6 @@ public class Counter extends Actor
     {
         GreenfootImage image = getImage();
         image.clear();
-        image.drawString(text + value+"(" + secondValue + ")", 1, 12);
+        image.drawString(text + value + "(" + secondValue + ")", 1, 12);
     }
 }

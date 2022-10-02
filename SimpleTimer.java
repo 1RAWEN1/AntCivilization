@@ -12,7 +12,7 @@ public class SimpleTimer
      * Act - do whatever the SimpleTimer wants to do. This method is called whenever
      * the 'Act' or 'Run' button gets pressed in the environment.
      */
-    int steps=0;
+    int steps = 0;
     
     public void calculate() 
     {
@@ -24,6 +24,6 @@ public class SimpleTimer
     }
     
     public void update(){
-        steps=0;
+        steps = 0;
     }
 }

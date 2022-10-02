@@ -1,32 +1,25 @@
 import greenfoot.*;  // (World, Actor, GreenfootImage, and Greenfoot)
+import org.apache.http.io.SessionOutputBuffer;
+
 import java.util.ArrayList;
 
+//renamed
 public class Ant extends Creature
 {
-    /** Indicate whether we have any food with us. */
-    private boolean carryingFood = false;
+    private boolean isCarryingFood = false;
 
-    /** How much pheromone do we have right now. */
-    private int pheromoneLevel = 0;
-
-    /** How well do we remember the last pheromone - larger number: more recent */
-    private int foundLastPheromone = 0;
-    
-    private final int radius = 50;
+    private final int viewingRadius = 50;
     
     private int level = 1;
     
     private final int MAX_LEVEL = 10;
     
-    private int profession = 0;
+    private int profession;
 
-    /**
-     * Create an ant with a given home hill. The initial speed is zero (not moving).
-     */
     public Ant(AntHill home)
     {
         updateCof();
-        profession=Greenfoot.getRandomNumber(2)+1;
+        profession = Greenfoot.getRandomNumber(50) < 10 ? 2 : Greenfoot.getRandomNumber(50) < 10 ? 3 : 1;
         setHomeHill(home);
         setVariables();
     }
@@ -34,7 +27,7 @@ public class Ant extends Creature
     public Ant(AntHill home, int profession)
     {
         updateCof();
-        this.profession=profession;
+        this.profession = profession;
         setHomeHill(home);
         setVariables();
     }
@@ -44,56 +37,140 @@ public class Ant extends Creature
     }
     
     private void setVariables(){
-        if(profession==1){
+        if(profession != 2){
             setHp(3);
         }
         else{
             setHp(6);
         }
         
-        setFood(3, 1);
-        
-        needToCheck=(ArrayList<AntHill>)AntWorld.homeArray.clone();
+        setFood(3);
     }
 
-    /**
-     * Do what an ant's gotta do.
-     */
     public void act()
     {
+        razn=0;
         dTimer.calculate();
+        updateVariables();
+        searchForEnemies();
+        if(!participateInBattle){
+            doTrophallaxis();
+        }
         if(!isUnderGround()){
-            if(profession==1){
-                if (carryingFood) {
+            if(!participateInBattle) {
+                if (profession == 1) {
+                    if (isCarryingFood) {
+                        walkTowardsHome();
+                        handlePheromoneDrop();
+                    }
+                    else if(isCarryingBigFood){
+                        walkTowardsHome();
+
+                        Food food = (Food)getOneIntersectingObject(Food.class);
+
+                        if(food != null) {
+                            handlePheromoneDrop(food.getCrumbs() * 15);
+                        }
+                    }
+                    else {
+                        searchForFood();
+                    }
+                } else if (profession == 2) {
+                    randomWalk();
+                }
+                else if(profession == 3){
                     walkTowardsHome();
-                    handlePheromoneDrop();
-                    carry();
                 }
-                else {
-                    searchForFood();
-                }
-            }
-            else if(profession==2){
-                searchEnemies();
             }
         }
         else{
-            inHome();
+            if(!participateInBattle && profession != 2) {
+                if (profession != 3) {
+                    inHome();
+                } else {
+                    nurse();
+                }
+            }
+            else if(profession==2){
+                /*if(canSeeEnemy()){
+                    myTarget=enemy;
+                    attack();
+                    if(intersects(enemy)) {
+                        turnTowards(enemy);
+                    }
+                }
+                else */
+                if(isTouching(AntHill.class)){
+                    boolean add = true;
+                    for (AntHill checkedHill : checkedHills) {
+                        if (getOneIntersectingObject(AntHill.class) == checkedHill) {
+                            add = false;
+                            break;
+                        }
+                    }
+                    if(add){
+                        checkedHills.add((AntHill)getOneIntersectingObject(AntHill.class));
+                    }
+                }
+
+                if(!participateInBattle){
+                    inHome();
+                }
+            }
         }
         if(atHome()){
-            moveInHome();
+            comeHome();
+            if(isCarryingGround) {
+                updateHome();
+            }
         }
         
         eatFood();
         
         updateAnimation();
-        
+
+        if(!participateInBattle)
+            checkFood();
+
+        if(haveTakenObject() && getTakenObject().getWorld() != null && !intersects(getTakenObject())
+        || haveTakenObject() && getTakenObject().getWorld() == null){
+            putObject();
+        }
+
+        regenerateHp();
+
         die();
     }
 
-    /**
-     * Walk around in search of food.
-     */
+    public void updateVariables(){
+        if(haveTakenObject()){
+            isCarryingFood = getTakenObject().getClass().equals(TakenFood.class);
+
+            isCarryingLarva = getTakenObject().getClass().equals(Egg.class);
+
+            isCarryingGround = getTakenObject().getClass().equals(TakenGround.class);
+
+            isCarryingBigFood = getTakenObject().getClass().equals(Food.class);
+        }
+        else{
+            isCarryingBigFood = false;
+            isCarryingLarva = false;
+            isCarryingGround = false;
+            isCarryingFood = false;
+        }
+    }
+
+    private void updateHome(){
+        if(!isUnderGround()){
+            if(haveTakenObject()) {
+                getHomeHill().countEndurance();
+                put();
+                getWorld().removeObject(takenGround);
+            }
+            isCarryingGround = false;
+        }
+    }
+    
     private void searchForFood()
     {
         if(canSeeFood()){
@@ -102,21 +179,25 @@ public class Ant extends Creature
         else if (smellPheromone()) {
             walkTowardsPheromone();
         }
-        else {
+        else{
             randomWalk();
         }
-        checkFood();
     }
     
-    private SimpleTimer dTimer=new SimpleTimer();
+    private final SimpleTimer dTimer=new SimpleTimer();
     private final int dSteps = 50;
-    
-    private void searchEnemies(){
-        if(seeEnemy()){
-            turnTowards(enemy);
+
+    boolean participateInBattle;
+    private void searchForEnemies(){
+        participateInBattle = false;
+        if(canSeeEnemy()){
+            participateInBattle = true;
             if(!intersects(enemy)){
                 headTowards(enemy);
-                walk();
+                purposefulWalk();
+            }
+            else{
+                turnTowards(enemy);
             }
             
             attack();
@@ -124,35 +205,54 @@ public class Ant extends Creature
         else if(smellAttackPheromone()){
             walkTowardsAttackPheromone();
         }
-        else if(foodNotFully() && canSeeFood()){
+        else if(foodNotFully() && canSeeFood() && profession==2){
             walkTowardsFood();
         }
-        else if(seeEnemyHome()){
+        else if(canSeeEnemyHome() && profession==2){
             headTowards(enemyHome);
-            walk();
+            purposefulWalk();
         }
-        else{
-            randomWalk();
+
+        if(participateInBattle) {
+            putObject();
         }
-        
-        checkFood();
+    }
+
+    public void putObject(){
+        if (haveTakenObject()) {
+            if (isCarryingFood && isUnderGround()) {
+                dropFood();
+            } else if (isCarryingFood) {
+                dropFood1();
+            } else if (isCarryingLarva){
+                isCarryingLarva = false;
+                put();
+            } else if (isCarryingBigFood) {
+                isCarryingBigFood = false;
+                put();
+            } else if(isCarryingGround){
+                isCarryingGround = false;
+                put();
+            }
+        }
     }
     
-    ArrayList<AntHill> needToCheck=new ArrayList<AntHill>();
+    ArrayList<AntHill> checkedHills = new ArrayList<>();
     AntHill enemyHome;
     
     boolean checked = false;
-    private boolean seeEnemyHome(){
-        if(getObjectsInRange(radius, AntHill.class).size()>0){
-            enemyHome=getObjectsInRange(radius, AntHill.class).get(0);
-            checked=true;
-            for(int i=0;i<needToCheck.size();i++){
-                if(enemyHome==needToCheck.get(i)){
-                    checked=false;
+
+    private boolean canSeeEnemyHome(){
+        if(getObjectsInRange(viewingRadius, AntHill.class).size() > 0){
+            enemyHome=getObjectsInRange(viewingRadius, AntHill.class).get(0);
+            checked = false;
+            for(AntHill ah : checkedHills){
+                if(enemyHome == ah){
+                    checked = true;
                     break;
                 }
             }
-            return enemyHome!=getHomeHill() && enemyHome.getAntNumber()>0 && !checked;
+            return enemyHome.getTeam() != getHomeHill().getTeam() && enemyHome.getAntNumber() > 0 && !checked;
         }
         else{
             return false;
@@ -160,11 +260,22 @@ public class Ant extends Creature
     }
     
     private void attack(){
-        if(intersects(enemy) && dTimer.getTime()>=dSteps){
-            enemy.damage(1+(level/5));
+        if(intersects(enemy) && enemy.isUnderGround() == isUnderGround() && dTimer.getTime()>=dSteps){
+            if(profession==2){
+                if(level<MAX_LEVEL) {
+                    level++;
+                    setHp1(6 + (level / 5));
+                }
+
+                enemy.damage(1 + (level / 5));
+                //enemy.setImpulse(1+(level/5), getRotation());
+            }
+            else{
+                enemy.damage(1);
+                //enemy.setImpulse(1, getRotation());
+            }
             dropAttackPheromone();
-            if(level<MAX_LEVEL)
-                level++;
+
             dTimer.update();
         }
     }
@@ -178,29 +289,29 @@ public class Ant extends Creature
     private void walkTowardsAttackPheromone(){
         Actor ph = getOneIntersectingObject(AttackPheromone.class);
         headTowards(ph);
-        walk();
+        purposefulWalk();
     }
     
     private AttackPheromone ap;
     
-    private int startAPheromoneValue = 300;
+    private final int startAPheromoneValue = 300;
     private void dropAttackPheromone(){
         if(ap!=null && ap.getWorld()==null){
             ap=null;
         }
-        if(ap!=null && !intersects(ap) || ap==null){
-            ap=new AttackPheromone((startAPheromoneValue + level*24));
+        if(ap==null || !intersects(ap)){
+            ap=new AttackPheromone((startAPheromoneValue + profession == 2 ? level * 20 : 0), 250);
             getWorld().addObject(ap, getX(), getY());
         }
     }
     
     private Live crInRadius;
     private Live enemy;
-    private boolean seeEnemy(){
+    private boolean canSeeEnemy(){
         enemy=null;
-        for(int i=0;i<getObjectsInRange(radius, Live.class).size();i++){
-            crInRadius=getObjectsInRange(radius, Live.class).get(i);
-            if(crInRadius.getHomeHill().getTeam()!=getHomeHill().getTeam() && crInRadius.isUnderGround()==isUnderGround()){
+        for(int i = 0; i<getObjectsInRange(viewingRadius, Live.class).size(); i++){
+            crInRadius=getObjectsInRange(viewingRadius, Live.class).get(i);
+            if(crInRadius.getHomeHill().getTeam()!=getHomeHill().getTeam() && canInteract(crInRadius)){
                 enemy=crInRadius;
             }
         }
@@ -208,32 +319,33 @@ public class Ant extends Creature
     }
     
     private boolean canSeeFood(){
-        return getObjectsInRange(radius, Food.class).size()>0 && !isUnderGround();
+        return getObjectsInRange(viewingRadius, Food.class).size()>0 && !isUnderGround();
     }
     
     private void walkTowardsFood(){
-        Actor food = getObjectsInRange(radius, Food.class).get(0);
+        Actor food = getObjectsInRange(viewingRadius, Food.class).get(0);
         if (food != null) {
             headTowards(food);
-            walk();
+            purposefulWalk();
         }
     }
 
-    /**
-     * Are we home? Drop the food if we are, and start heading back out.
-     */
     private void checkHome()
     {
-        Warehouse wr=(Warehouse)getOneIntersectingObject(Warehouse.class);
-        if (wr!=null) {
-            wr.addFood();
+        if(touchingBlock!=null && touchingBlock.getWorld()!=null){
+            turnTowards(touchingBlock);
+        }
+        TakenFood touchingFood = (TakenFood)getOneIntersectingObject(TakenFood.class);
+        if (touchingBlock!=null && !touchingBlock.canDig(this)
+        && Math.sqrt(Math.pow(getX()-getHomeHill().getX(),2)+Math.pow(getY()-getHomeHill().getY(),2)) > viewingRadius) {
+            dropFood();
+        }
+        else if(touchingFood != null && !touchingFood.taken
+        && Math.sqrt(Math.pow(getX() - touchingFood.getX(), 2) + Math.pow(getY() - touchingFood.getY(), 2)) < 4){
             dropFood();
         }
     }
 
-    /**
-     * Are we home?
-     */
     private boolean atHome()
     {
         if(profession==2){
@@ -246,7 +358,7 @@ public class Ant extends Creature
             }
         }
         else{
-            if (getHomeHill() != null) {
+            if (getHomeHill() != null && myTarget == getHomeHill()) {
                 return (Math.abs(getX() - getHomeHill().getX()) < 2) && (Math.abs(getY() - getHomeHill().getY()) < 2);
             }
             else {
@@ -255,193 +367,357 @@ public class Ant extends Creature
         }
 
     }
-    
-    private Actor target;
-    private void inHome(){
-        if(target==null){
-            target=getHomeHill();
-        }
-        if(foodNotFully() && getHomeHill().getFood()!=0){
-            for(int i=0;i<getObjectsInRange(radius,Warehouse.class).size();i++){
-                if(getObjectsInRange(radius,Warehouse.class).get(i).notEmpty()){
-                    target=getObjectsInRange(radius,Warehouse.class).get(i);
-                    break;
-                }
+
+    public void nurse(){
+        myTarget = null;
+        for (Egg egg : getObjectsInRange(viewingRadius, Egg.class)) {
+            if (egg.foodNotFully() && getFood() > 1 + egg.needFood()) {
+                myTarget = egg;
+                break;
             }
+        }
+        if(foodNotFully() && getObjectsInRange(viewingRadius,TakenFood.class).size() > 0){
+            myTarget = getObjectsInRange(viewingRadius,TakenFood.class).get(0);
+        }
+
+        if(isCarryingGround){
+            myTarget = getHomeHill();
+        }
+
+        if(touchingBlock!=null && touchingBlock.canDig(this) && canDig && !isCarryingGround){
+            myTarget = touchingBlock;
+            if(haveTakenObject()) {
+                putObject();
+            }
+            else{
+                targetBlock = touchingBlock;
+                takenGround = new TakenGround();
+                getWorld().addObject(takenGround, getX(), getY());
+                take(takenGround);
+                isCarryingGround = true;
+            }
+        }
+        else if(!haveTakenObject() && isTouching(TakenGround.class)){
+            TakenGround ground = (TakenGround) getOneIntersectingObject(TakenGround.class);
+            take(ground);
+            isCarryingGround = true;
+        }
+        else if(myTarget == null && targetBlock != null){
+            myTarget = targetBlock;
+        }
+
+        if(myTarget!=null && myTarget.getWorld()==null){
+            if(myTarget == targetBlock){
+                targetBlock = null;
+            }
+            myTarget=null;
+        }
+
+        if(myTarget != null){
+            headTowards(myTarget);
+            purposefulWalk();
         }
         else{
-            target=getHomeHill();
+            randomWalk();
         }
-        if(carryingFood){
-            for(int i=0;i<getObjectsInRange(radius, Warehouse.class).size();i++){
-                if(!getObjectsInRange(radius, Warehouse.class).get(i).isFully()){
-                    target=getObjectsInRange(radius, Warehouse.class).get(i);
-                    break;
+
+        feedLarva();
+
+        transportLarva();
+
+        transportFood();
+
+        eat1();
+
+        if(getHomeHill().getFood() == 0 && !isCarryingLarva){
+            profession = 1;
+            getHomeHill().reduceNurse();
+        }
+    }
+
+    public void doTrophallaxis(){
+        for(Creature ant : getObjectsInRange(viewingRadius, Creature.class)){
+            if(ant.getHomeHill().getTeam() == getHomeHill().getTeam() && ant.getFood() - 1 > getFood() && ant.getFoodPersent() > getFoodPersent() && canInteract(ant)){
+                if(!intersects(ant)) {
+                    headTowards(ant);
+                    purposefulWalk();
                 }
+                break;
             }
         }
-        if(profession==2){
-            if(seeEnemy()){
-                target=enemy;
-                attack();
-                turnTowards(enemy);
+
+        Creature ant = (Creature) getOneIntersectingObject(Creature.class);
+        if(ant != null && ant.getHomeHill().getTeam() == getHomeHill().getTeam() && ant.getFood() - 1 > getFood() && ant.getFoodPersent() > getFoodPersent() && canInteract(ant)){
+            ant.eatFood(1);
+            eat();
+
+            turnTowards(ant.getX() ,ant.getY());
+            ant.turnTowards(getX() ,getY());
+            ant.stop();
+            stop();
+        }
+    }
+
+    private void feedLarva(){
+        Egg egg = (Egg)getOneIntersectingObject(Egg.class);
+        if(egg != null && intersects(egg) && egg.foodNotFully() && food > 1){
+            egg.countFood();
+            food--;
+        }
+    }
+
+    boolean isCarryingLarva;
+    private void transportLarva(){
+        if(calculateDistToHome() < viewingRadius && myTarget != touchingBlock && !isCarryingGround) {
+            Egg egg = (Egg) getOneIntersectingObject(Egg.class);
+            if (egg != null) {
+                take(egg);
+                isCarryingLarva = true;
             }
-            else if(isTouching(AntHill.class)){
-                for(int i=0;i<needToCheck.size();i++){
-                    if((AntHill)getOneIntersectingObject(AntHill.class)==needToCheck.get(i)){
-                        needToCheck.remove(i);
-                        break;
-                    }
-                }
+        }
+        else if(haveTakenObject() && calculateDistToHome() > viewingRadius + 10 && isCarryingLarva){
+            put();
+            isCarryingLarva = false;
+        }
+    }
+
+    public void transportFood(){
+        if(calculateDistToHome() < viewingRadius && profession == 3 && myTarget != touchingBlock && !isCarryingGround) {
+            TakenFood takenfood = (TakenFood) getOneIntersectingObject(TakenFood.class);
+            if (takenfood != null) {
+                take(takenfood);
+                tf = takenfood;
+                tf.put();
+                isCarryingFood = true;
             }
         }
-        
-        if(target!=null && target.getWorld()==null){
-            target=null;
-        }
-        
-        if(target!=null && target.getWorld()!=null){
-            headTowards(target);
-            walk();
-        }
-        /*if((getX()-getHomeHill().getX())%20>0 && (getX()-getHomeHill().getX())%20<SPEED
-        && (getY()-getHomeHill().getY())%20>0 && (getY()-getHomeHill().getY())%20<SPEED){
-            setLocation(getX()+(getX()-getHomeHill().getX())%20, getY());
-        }*/
-        
-        if(carryingFood){
+        if(isCarryingFood){
             if(tf!=null){
-                carry();
                 tf.getImage().setTransparency(getImage().getTransparency());
+                tf.setUnderGround(isUnderGround());
+                checkHome();
             }
-            checkHome();
+        }
+    }
+    
+    private Actor myTarget;
+
+    private boolean isCarryingGround = false;
+    private TakenGround takenGround;
+
+    Block targetBlock;
+    private void inHome(){
+        if(myTarget==null){
+            myTarget=getHomeHill();
+        }
+        if(foodNotFully() && getObjectsInRange(viewingRadius,TakenFood.class).size()>0){
+            myTarget=getObjectsInRange(viewingRadius,TakenFood.class).get(0);
+        }
+        else if(foodNotFully() && getHomeHill().getFood() > 0){
+            myTarget = null;
+        }
+        else{
+            myTarget=getHomeHill();
+        }
+        if(isCarryingFood){
+            /*if(getObjectsInRange(radius,TakenFood.class).size()>0){
+                myTarget=getObjectsInRange(radius,TakenFood.class).get(0);
+            }
+            else{*/
+                myTarget=null;
+            //}
+        }
+        if(isCarryingGround){
+            myTarget = getHomeHill();
+        }
+
+        if(touchingBlock!=null && touchingBlock.canDig(this) && canDig && !isCarryingGround){
+            myTarget = touchingBlock;
+            if(haveTakenObject()) {
+                putObject();
+            }
+            else{
+                targetBlock = touchingBlock;
+                takenGround = new TakenGround();
+                getWorld().addObject(takenGround, getX(), getY());
+                take(takenGround);
+                isCarryingGround = true;
+            }
+        }
+        else if(myTarget == null && targetBlock != null){
+            myTarget = targetBlock;
+        }
+
+        if(myTarget!=null && myTarget.getWorld()==null){
+            if(myTarget == targetBlock){
+                targetBlock = null;
+            }
+            myTarget=null;
+        }
+
+        if(myTarget!=null){
+            headTowards(myTarget);
+            purposefulWalk();
+        }
+        else{
+            randomWalk();
+        }
+        
+        transportFood();
+
+        if(profession == 1 && getHomeHill().getFood() / 3 > getObjectsInRange(viewingRadius, Egg.class).size() && !isCarryingFood && getHomeHill().getNurseNumber() < 5 && getHomeHill().haveQueen()){
+            profession = 3;
+            getHomeHill().newNurse();
         }
         
         eat1();
     }
     
     public void eat1(){
-        Warehouse wh=(Warehouse)getOneIntersectingObject(Warehouse.class);
-        if(wh!=null && wh.notEmpty() && foodNotFully()){
-            wh.takeSome();
-            eat();
+        TakenFood tf=(TakenFood)getOneIntersectingObject(TakenFood.class);
+        if(tf!=null && foodNotFully() && tf.getUnderGround() == isUnderGround()){
+            eat(tf.energyCost);
+            tf.eat();
         }
     }
 
-    /**
-     * Is there any food here where we are? If so, take some!.
-     */
+    boolean isCarryingBigFood;
     public void checkFood()
     {
         Food food = (Food) getOneIntersectingObject(Food.class);
-        if(food!=null){
+        if(food!=null && !isUnderGround()){
             if(foodNotFully()){
                 eatFood(food);
             }
-            if (profession==1 & food.getWorld()!=null) {
+            else if (profession==1 && food.energyCost == 1 && !haveTakenObject()
+            || profession==1 && food.energyCost == 2 && !haveTakenObject() && calculateDistToHome() < viewingRadius) {
                 takeFood(food);
-    
             }
+            else if(profession==1 && !haveTakenObject() && calculateDistToHome() >= viewingRadius){
+                isCarryingBigFood = true;
+                take(food);
+            }
+        }
+
+        if(isCarryingBigFood && calculateDistToHome() < viewingRadius){
+            isCarryingBigFood = false;
+            put();
+        }
+        else if(isCarryingBigFood && !intersects(getTakenObject())){
+            isCarryingBigFood = false;
+            put();
         }
     }
 
-    /**
-     * Take some food from a fool pile.
-     */
     private TakenFood tf;
-    private final int startPheromoneValue=60;
+    private int pheromoneValue;
     private void takeFood(Food food)
     {
-        carryingFood = true;
+        isCarryingFood = true;
         food.takeSome();
-        
-        tf=new TakenFood();
+
+        pheromoneValue = 30 + food.getCrumbs() * 5;
+        tf=new TakenFood(getHomeHill(), food.getTypeOfFood(), food.getSecondTypeOfFood(), food.getImage());
         getWorld().addObject(tf,getX(),getY());
         take(tf);
     }
-    
+
     private void eatFood(Food food){
         food.takeSome();
-        eat();
+        eat(food.energyCost);
     }
 
-    /**
-     * Drop our food in the ant hill.
-     */
+    public void dropFood1(){
+        getWorld().addObject(new Food(1, tf.typeOfFood, 1),getX(),getY());
+        put();
+        getWorld().removeObject(tf);
+        tf = null;
+        isCarryingFood = false;
+        lastPh=null;
+    }
+
     private void dropFood()
     {
-        carryingFood = false;
+        isCarryingFood = false;
         if(level<MAX_LEVEL){
             level++;
+            setSpeed(3 + (level / 5));
         }
         lastPh=null;
-        remove();
-        tf=null;
-        /*GreenfootImage im=new GreenfootImage(getImage().getWidth()+2,getImage().getHeight());
-        im.drawImage(new GreenfootImage("takenFood.png"),0,(im.getHeight()/2)-1);
-        im.drawImage(getImage(),2,0);
-        setImage(im);*/
+        tf.drop();
+        put();
         updateCof();
+        tf = null;
     }
 
-    /**
-     * Check whether we can drop some pheromone yet. If we can, do it.
-     */
     private Pheromone lastPh;
-    
-    private int phIndex;
+    private int time;
     private void handlePheromoneDrop()
     {
-        if (lastPh!=null && !intersects(lastPh) || lastPh==null) {
-            lastPh = new Pheromone(startPheromoneValue + level*12);
+        if (lastPh == null || lastPh.getWorld() == null || (int)Math.sqrt(Math.pow(lastPh.getX() - getX(), 2) + Math.pow(lastPh.getY() - getY(), 2)) > pheromoneValue / 10) {
+            if(lastPh == null){
+                time = (int)(calculateDistToHome() * 1.5);
+            }
+            lastPh = new Pheromone(pheromoneValue, time);
             getWorld().addObject(lastPh, getX(), getY());
         }
     }
 
-    /**
-     * Check whether we can smell pheromones. If we can, return true, otherwise return false.
-     */
+    private void handlePheromoneDrop(int value)
+    {
+        if(!isTouching(Pheromone.class)) {
+            if (lastPh == null || !intersects(lastPh)) {
+                lastPh = new Pheromone(value, value);
+                getWorld().addObject(lastPh, getX(), getY());
+            }
+        }
+    }
+
     public boolean smellPheromone()
     {
         Actor ph = getOneIntersectingObject(Pheromone.class);
         return (ph != null);
     }
 
-    /**
-     * If we can smell some pheromone, walk towards it. If not, do nothing.
-     */
-    private Pheromone nextPh;
-    
-    private Pheromone smellPh;
+    private int phX;
+    private int phY;
+    private int n;
+
     public void walkTowardsPheromone()
     {
-        /*Actor ph = getOneIntersectingObject(Pheromone.class);
-        if (ph != null) {
-            headTowards(ph);
-            walk();
-            if (ph.getX() == getX() && ph.getY() == getY()) {
-                foundLastPheromone = PH_TIME;
-            }
-        }*/
         Pheromone ph = (Pheromone)getOneIntersectingObject(Pheromone.class);
-        if(nextPh!=null){
-            ph=nextPh;
-        }
         if (ph != null) {
-            try{
-                headTowards(ph);
-                walk();
-                if (ph.getX() == getX() && ph.getY() == getY()) {
-                    for(int i=0;i<getObjectsInRange(ph.getMaxIntensity()/3,Pheromone.class).size();i++){
-                        smellPh=getObjectsInRange(ph.getMaxIntensity()/3,Pheromone.class).get(i);
-                        if(!intersects(smellPh) && smellPh.getIntensity()<ph.getIntensity()){
-                            nextPh=smellPh;
-                            break;
+            if(n != 0) {
+                headTowards(phX / n, phY / n);
+                purposefulWalk();
+            }
+
+            if (n != 0 || ph.getX() == getX() && ph.getY() == getY()) {
+                phX = 0;
+                phY = 0;
+                n = 0;
+
+                for(Pheromone pheromone : getIntersectingObjects(Pheromone.class)){
+                    //if(!intersects(pheromone)) {
+                        int rot = getRotation();
+                        turnTowards(pheromone.getX(), pheromone.getY());
+                        int rotToPh = getRotation();
+                        setRotation(rot);
+                        if (Math.abs(rot - rotToPh) <= 90 || Math.abs(rot - rotToPh) > 270) {
+                            phX += pheromone.getX();
+                            phY += pheromone.getY();
+                            n++;
                         }
-                    }
+                    //}
                 }
-            }catch(Exception e){
-                nextPh=null;
+
+                if(n == 0){
+                    setRotation(Greenfoot.getRandomNumber(360));
+                }
+            }
+            else{
+                headTowards(ph);
+                purposefulWalk();
             }
         }
     }
@@ -451,10 +727,13 @@ public class Ant extends Creature
     private final int step=2;
     
     private int shot=1;
-    
     private final int MAX_SHOT=3;
+
     private void updateAnimation(){
-        animation++;
+        if(moved()){
+            animation++;
+        }
+
         if(animation>=step){
             animation=0;
             shot++;
@@ -462,71 +741,28 @@ public class Ant extends Creature
         if(shot>MAX_SHOT){
             shot=1;
         }
-        //for greenfoot web site
-        /*if(profession==1){
+
+        if(profession!=2){
             setImage("ant"+shot+".png");
-            if(getHomeHill().getTeam()==1){
+            getImage().setColor(AntWorld.teamColors.get(getHomeHill().getTeam() - 1));
+            /*if(getHomeHill().getTeam()==1){
                 getImage().setColor(Color.BLUE);
             }
             else if(getHomeHill().getTeam()==2){
-                getImage().setColor(Color.RED);
+                getImage().setColor(Color.CYAN);
             }
             else if(getHomeHill().getTeam()==3){
                 getImage().setColor(Color.YELLOW);
             }
             else if(getHomeHill().getTeam()==4){
                 getImage().setColor(Color.GREEN);
-            }
+            }*/
             getImage().fillRect(1,4,1,2);
         }
         else{
-            setImage("bant"+shot+".png");
-            if(getHomeHill().getTeam()==1){
-                getImage().setColor(Color.BLUE);
-            }
-            else if(getHomeHill().getTeam()==2){
-                getImage().setColor(Color.RED);
-            }
-            else if(getHomeHill().getTeam()==3){
-                getImage().setColor(Color.YELLOW);
-            }
-            else if(getHomeHill().getTeam()==4){
-                getImage().setColor(Color.GREEN);
-            }
-            getImage().fillRect(2,8,2,4);
-        }*/
-        if(profession==1){
-            setImage("ant"+shot+".png");
-            if(getHomeHill().getTeam()==1){
-                getImage().setColor(Color.BLUE);
-            }
-            else if(getHomeHill().getTeam()==2){
-                getImage().setColor(Color.CYAN);
-            }
-            else if(getHomeHill().getTeam()==3){
-                getImage().setColor(Color.YELLOW);
-            }
-            else if(getHomeHill().getTeam()==4){
-                getImage().setColor(Color.GREEN);
-            }
-            getImage().fillRect(1,4,1,2);
-        }
-        if(profession==2){
             setImage("soldier"+shot+".png");
-            if(getHomeHill().getTeam()==1){
-                getImage().setColor(Color.BLUE);
-            }
-            else if(getHomeHill().getTeam()==2){
-                getImage().setColor(Color.CYAN);
-            }
-            else if(getHomeHill().getTeam()==3){
-                getImage().setColor(Color.YELLOW);
-            }
-            else if(getHomeHill().getTeam()==4){
-                getImage().setColor(Color.GREEN);
-            }
+            getImage().setColor(AntWorld.teamColors.get(getHomeHill().getTeam() - 1));
             getImage().fillRect(2,8,2,2);
-            //getImage().scale((int)(getImage().getWidth()*2),(int)(getImage().getHeight()*2));
         }
         
         if(isUnderGround()){
@@ -536,16 +772,24 @@ public class Ant extends Creature
     
     private void die(){
         if(food<=0 || hp<=0){
-            if(tf!=null){
-                getWorld().addObject(new Food(1),tf.getX(),tf.getY());
-                getWorld().removeObject(tf);
+            if(tf!=null && tf.getWorld()!=null){
+                putObject();
             }
+
             if(profession==1){
                 getHomeHill().antDead();
             }
-            else{
+            else if(profession == 2){
                 getHomeHill().soldierDead();
             }
+            else{
+                getHomeHill().nurseDead();
+            }
+
+            if(food > 0){
+                getWorld().addObject(new Food(food, 2, 1), getX(), getY());
+            }
+
             getWorld().removeObject(this);
         }
     }

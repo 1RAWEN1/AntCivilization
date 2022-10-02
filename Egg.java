@@ -13,22 +13,29 @@ public class Egg extends Live
      * the 'Act' or 'Run' button gets pressed in the environment.
      */
     private SimpleTimer t=new SimpleTimer();
-    private int profession=0;
-    private int food = 0;
+    private int profession;
     
     private int x;
     private int y;
-    public Egg(int prof, AntHill home){
+
+    private boolean royalEgg;
+    public Egg(int prof, AntHill home, boolean royalEgg){
+        this.royalEgg = royalEgg;
         setHomeHill(home);
         profession=prof;
-        if(prof==2){
+        if(prof==2 || royalEgg){
             size=18;
             SPAWN_TIME*=2;
         }
+
+        if(!royalEgg) {
+            setFood(3, 1);
+        }
+        else{
+            setFood(10, 1);
+        }
         
         setHp(1);
-        
-        setFood(3,1);
         
         updateImage();
     }
@@ -43,7 +50,10 @@ public class Egg extends Live
     private int size = 10;
     private void updateImage(){
         GreenfootImage myImage=new GreenfootImage((int)(((double)t.getTime()/SPAWN_TIME)*size)+1,(int)(((double)t.getTime()/SPAWN_TIME)*size)+1);
-        if(profession==2){
+        if(royalEgg){
+            myImage.setColor(Color.GREEN);
+        }
+        else if(profession==2){
             myImage.setColor(Color.BLUE);
         }
         else{
@@ -56,21 +66,45 @@ public class Egg extends Live
         setImage(myImage);
     }
     
-    private boolean start=true;
-    
-    private int SPAWN_TIME=500;
+    private int SPAWN_TIME=1000;
+
+    int changeXLoc;
+    int changeYLoc;
+    int changeXLoc1;
+    int changeYLoc1;
     public void act() 
     {
-        t.calculate();
+        setRotation(0);
+        if(t.getTime() <= SPAWN_TIME) {
+            t.calculate();
+        }
         updateImage();
-        if(t.getTime()>SPAWN_TIME && !isTouching(Block.class)){
+        if(t.getTime()>SPAWN_TIME && !isTouching(UndergroundObs.class)){
             if(Greenfoot.getRandomNumber(100) < 10) 
             {
-                if(food==3){
-                    Ant ant=new Ant(getHomeHill(), profession);
-                    getWorld().addObject(ant, getX(), getY());
-                    getHomeHill().newAnt(ant);
-                    getHomeHill().countAnts();
+                if(!foodNotFully()){
+                    if(!royalEgg) {
+                        Ant ant = new Ant(getHomeHill(), profession);
+                        getWorld().addObject(ant, getX(), getY());
+                        getHomeHill().newAnt(ant);
+                        getHomeHill().countAnts();
+                    }
+                    else{
+                        if(Greenfoot.getRandomNumber(2) == 1) {
+                            QueenAnt queen = new QueenAnt(getHomeHill());
+                            queen.notQueen();
+                            getWorld().addObject(queen, getX(), getY());
+
+                            getHomeHill().newPrincess();
+                        }
+                        else{
+                            Prince prince = new Prince(getHomeHill());
+                            getWorld().addObject(prince, getX(), getY());
+
+                            getHomeHill().newPrince();
+                        }
+                    }
+                    getHomeHill().reduseEgg(getMAX_FOOD());
                 }
                 
                 getWorld().removeObject(this);
@@ -79,12 +113,37 @@ public class Egg extends Live
         else if(isTouching(UndergroundObs.class)){
             x=getX();
             y=getY();
-            for(int i=0;i<4;i++){
+            changeXLoc = 0;
+            changeYLoc = 0;
+            for (UndergroundObs uo : getIntersectingObjects(UndergroundObs.class)) {
+                changeXLoc1 = (uo.getImage().getWidth() / 2) + (getImage().getWidth() % 2) + (getImage().getWidth() / 2) - Math.abs(getX() - uo.getX());
+
+                changeYLoc1 = (uo.getImage().getHeight() / 2) + (getImage().getHeight() % 2) + (getImage().getHeight() / 2) - Math.abs(getY() - uo.getY());
+
+                if (changeXLoc1 <= changeYLoc1 && changeXLoc1 > 0) {
+                    changeYLoc1 = 0;
+                } else if (changeXLoc1 > changeYLoc1 && changeYLoc1 > 0) {
+                    changeXLoc1 = 0;
+                }
+
+                changeXLoc = Math.abs(changeXLoc) > changeXLoc1 ? changeXLoc : changeXLoc1;
+                changeYLoc = Math.abs(changeYLoc) > changeYLoc1 ? changeYLoc : changeYLoc1;
+
+                if (uo.getX() > getX() && changeXLoc == changeXLoc1) {
+                    changeXLoc = -changeXLoc1;
+                }
+                if (uo.getY() > getY() && changeYLoc == changeYLoc1) {
+                    changeYLoc = -changeYLoc1;
+                }
+            }
+
+            setLocation(x + changeXLoc, y + changeYLoc);
+            /*for(int i=0;i<4;i++){
                 setLocation(x+(int)Math.cos(Math.toRadians(i*90)),y+(int)Math.sin(Math.toRadians(i*90)));
                 if(!isTouching(UndergroundObs.class)){
                     break;
                 }
-            }
+            }*/
             /*setLocation(getX()+1,getY());
             if(isTouching(Block.class)){
                 setLocation(getX()-2,getY());

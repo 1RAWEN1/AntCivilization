@@ -8,31 +8,31 @@ import greenfoot.*;  // (World, Actor, GreenfootImage, Greenfoot and MouseInfo)
  */
 public class AttackPheromone extends Actor
 {
-    private final static int MAX_INTENSITY = 320;
+
+    private int time;
+    private final SimpleTimer timer = new SimpleTimer();
+    private int maxIntensity = 320;
     private int intensity;
 
-    /**
-     * Create a new drop of pheromone with full intensity.
-     */
     public AttackPheromone()
     {
-        intensity = MAX_INTENSITY;
+        time = 500;
         updateImage();
     }
     
-    public AttackPheromone(int intensity)
+    public AttackPheromone(int intensity, int time)
     {
-        this.intensity = intensity;
+        this.time = time;
+        maxIntensity = intensity;
         updateImage();
     }
 
-    /**
-     * The pheromone decreases the intensity. When the intensity reaches zero, it disappears.
-     */
     public void act()
     {
-        intensity -= 1;
-        if (intensity <= 0) {
+        timer.calculate();
+        //intensity -= 1;
+        intensity = (int)(((double)(time - timer.getTime()) / time) * maxIntensity);
+        if (timer.getTime() > time) {
             getWorld().removeObject(this);
         }
         else {
@@ -42,9 +42,6 @@ public class AttackPheromone extends Actor
         }
     }
 
-    /**
-     * Make the image. The size and transparency are proportional to the intensity.
-     */
     private void updateImage()
     {
         int size = intensity / 3 + 5;

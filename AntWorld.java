@@ -47,7 +47,7 @@ public class AntWorld extends World
                     diff += Math.abs(teamColors.get(i1).getGreen() - teamColors.get(i).getGreen());
                     diff += Math.abs(teamColors.get(i1).getBlue() - teamColors.get(i).getBlue());
 
-                    if(diff <= 100){
+                    if(diff <= 150){
                         currentColor = false;
                         break;
                     }
@@ -221,7 +221,7 @@ public class AntWorld extends World
     }
     
     public void createStones(){
-        for(int i=0;i<10+Greenfoot.getRandomNumber(5);i++){
+        for(int i=0;i<15+Greenfoot.getRandomNumber(10);i++){
             Stone st=new Stone();
             addObject(st,randomCoordX(),randomCoordY());
         }

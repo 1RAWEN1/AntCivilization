@@ -419,7 +419,7 @@ public class AntHill extends Actor
             generateMainImage();
         }*/
 
-        int s = (int)(Math.pow(IMAGE_SIZE, 2) * Math.PI);
+        int s = (int)(Math.pow(IMAGE_SIZE / 2, 2) * Math.PI);
         s += endurance;
         int r = (int)Math.sqrt(s / Math.PI);
         antHill = new GreenfootImage("anthill.png");

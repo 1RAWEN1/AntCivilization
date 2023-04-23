@@ -8,7 +8,7 @@ import greenfoot.*;  // (World, Actor, GreenfootImage, Greenfoot and MouseInfo)
  */
 public class Prince extends Creature
 {
-    private final int viewingRadius = 150;
+    private final int viewingRadius = 60;
     public Prince(AntHill home){
         setRotation(180);
         setHomeHill(home);
@@ -94,7 +94,7 @@ public class Prince extends Creature
             fly();
             searchForQueen();
             if(!findQueen)
-            randomWalk();
+                randomWalk();
         }
         else if(canSeeEnemy() || getHomeHill().getFood() > 0){
             walkTowardsHome();
@@ -122,34 +122,41 @@ public class Prince extends Creature
 
     public void walkTowardsPheromone()
     {
-        Pheromone ph = (Pheromone)getOneIntersectingObject(Pheromone.class);
-        if (ph != null) {
-            if(n != 0) {
-                headTowards(phX / n, phY / n);
-                purposefulWalk();
-            }
+        phX = 0;
+        phY = 0;
+        n = 0;
 
-            if (n != 0 || ph.getX() == getX() && ph.getY() == getY()) {
-                phX = 0;
-                phY = 0;
-                n = 0;
+        int sumOfIntensity = 0;
+        for(Pheromone pheromone : getIntersectingObjects(Pheromone.class)){
+            int rot = getRotation();
+            turnTowards(pheromone.getX(), pheromone.getY());
+            int rotToPh = getRotation();
+            setRotation(rot);
+            if (Math.abs(rot - rotToPh) <= 90 || Math.abs(rot - rotToPh) > 270) {
+                sumOfIntensity += pheromone.getIntensity();
+            }
+        }
 
-                for(Pheromone pheromone : getIntersectingObjects(Pheromone.class)){
-                    int rot = getRotation();
-                    turnTowards(pheromone.getX(), pheromone.getY());
-                    int rotToPh = getRotation();
-                    setRotation(rot);
-                    if (Math.abs(rot - rotToPh) <= 90 || Math.abs(rot - rotToPh) > 270) {
-                        phX += pheromone.getX();
-                        phY += pheromone.getY();
-                        n++;
-                    }
-                }
+        for(Pheromone pheromone : getIntersectingObjects(Pheromone.class)){
+            //if(!intersects(pheromone)) {
+            int rot = getRotation();
+            turnTowards(pheromone.getX(), pheromone.getY());
+            int rotToPh = getRotation();
+            setRotation(rot);
+            if (Math.abs(rot - rotToPh) <= 90 || Math.abs(rot - rotToPh) > 270) {
+                n++;
+                phX += (int)(pheromone.getX() * ((double)pheromone.getIntensity() / sumOfIntensity));
+                phY += (int)(pheromone.getY() * ((double)pheromone.getIntensity() / sumOfIntensity));
             }
-            else{
-                headTowards(ph);
-                purposefulWalk();
-            }
+            //}
+        }
+
+        if(n != 0) {
+            headTowards(phX, phY);
+            purposefulWalk();
+        }
+        else{
+            randomWalk();
         }
     }
 

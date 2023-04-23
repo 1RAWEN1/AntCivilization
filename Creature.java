@@ -3,6 +3,7 @@ import greenfoot.*;  // (World, Actor, GreenfootImage, Greenfoot and MouseInfo)
 //renamed
 public class Creature  extends Live
 {
+    boolean participateInBattle;
     public int SPEED = 3;
 
     private int deltaX;
@@ -14,7 +15,7 @@ public class Creature  extends Live
 
     public Creature()
     {
-        getImage().setTransparency(100);
+        getImage().setTransparency(255);
         deltaX = 0;
         deltaY = 0;
     }
@@ -32,8 +33,8 @@ public class Creature  extends Live
         if(takenObject != null && takenObject.getWorld() != null) {
             if (cof1 == 1) {
                 takenObject.setRotation(getRotation());
-                takenObject.setLocation(getX() + (int) ((getImage().getWidth() / 2) * Math.cos(Math.toRadians(getRotation())))
-                        , getY() + (int) ((getImage().getWidth() / 2) * Math.sin(Math.toRadians(getRotation()))));
+                takenObject.setLocation(getX() + (int) (((getImage().getWidth() / 2) - 1) * Math.cos(Math.toRadians(getRotation())))
+                        , getY() + (int) (((getImage().getWidth() / 2) - 1) * Math.sin(Math.toRadians(getRotation()))));
             } else {
                 turnTowards(takenObject);
 
@@ -126,16 +127,18 @@ public class Creature  extends Live
     }
 
     public void headTowards(int x, int y){
-        deltaX = capSpeed(x - getX());
-        deltaY = capSpeed(y - getY());
+        /*deltaX = capSpeed(x - getX());
+        deltaY = capSpeed(y - getY());*/
+        headRoughlyTowards(x, y);
     }
     public void headTowards(Actor target)
     {
-        if(target != null && target.getWorld() != null){
-            this.target=target;
+        //if(target != null && target.getWorld() != null){
+            /*this.target=target;
             deltaX = capSpeed(target.getX() - getX());
-            deltaY = capSpeed(target.getY() - getY());
-        }
+            deltaY = capSpeed(target.getY() - getY());*/
+            headRoughlyTowards(target);
+        //}
     }
 
     public Actor getTarget(){
@@ -321,6 +324,7 @@ public class Creature  extends Live
     double cof1 = 1;
     private int startDeltaX;
     private int startDeltaY;
+    private final int turningSpeed = 10;
     public void walk()
     {
         startX = getX();
@@ -434,7 +438,7 @@ public class Creature  extends Live
         }
 
         if(touchingBlock != null){
-            if(touchingBlock.canDig(this) && canDig && !haveTakenObject()){
+            if(touchingBlock.canDig(this) && canDig && !haveTakenObject() && !participateInBattle){
                 touchingBlock.dig(this);
                 deltaX = 0;
                 deltaY = 0;
@@ -778,6 +782,17 @@ public class Creature  extends Live
             
             this.target=target;
         }
+    }
+
+    private void headRoughlyTowards(int x, int y)
+    {
+        int distanceX = Math.abs(getX() - x);
+        int distanceY = Math.abs(getY() - y);
+        boolean moveX = (distanceX > 0) && (Greenfoot.getRandomNumber(distanceX + distanceY) < distanceX);
+        boolean moveY = (distanceY > 0) && (Greenfoot.getRandomNumber(distanceX + distanceY) < distanceY);
+
+        deltaX = computeHomeDelta(moveX, getX(), x);
+        deltaY = computeHomeDelta(moveY, getY(), y);
     }
     
     private int computeHomeDelta(boolean move, int current, int home)

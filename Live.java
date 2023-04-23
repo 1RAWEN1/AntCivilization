@@ -129,7 +129,7 @@ public class Live extends Actor
         }
     }
     
-    private final int foodStep=1000;
+    private int foodStep=1000;
     public void eatFood(){
         foodTimer.calculate();
         if(foodTimer.getTime()>foodStep){
@@ -137,6 +137,10 @@ public class Live extends Actor
             
             foodTimer.update();
         }
+    }
+
+    public void setFoodStep(int i){
+        foodStep = i;
     }
 
     SimpleTimer hpTimer = new SimpleTimer();
@@ -150,7 +154,11 @@ public class Live extends Actor
             }
         }
     }
-    
+
+    public void setHpStep(int hpStep) {
+        this.hpStep = hpStep;
+    }
+
     public void setHomeHill(AntHill homeHill)
     {
         home = homeHill;

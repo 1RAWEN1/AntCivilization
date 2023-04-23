@@ -1,6 +1,5 @@
-AntWars
+AntCivilization
 ====
-Version 3
         
 Author: RAVEN
 

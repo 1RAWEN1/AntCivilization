@@ -69,7 +69,7 @@ public class QueenAnt extends Creature
     private boolean canSeeEnemy(){
         enemy=null;
         for(Live l : getObjectsInRange(viewingRadius, Live.class)){
-            if(l.getHomeHill().getTeam()!=getHomeHill().getTeam() && canInteract(l)){
+            if(l.getHomeHill().getTeam()!=getHomeHill().getTeam() && canInteract(l) && !l.isFly()){
                 enemy=l;
             }
         }
@@ -219,7 +219,7 @@ public class QueenAnt extends Creature
                     stopFly();
                 }
                 else if(!isFly()){
-                    if(canSeeEnemy() || getHomeHill().getFood() > 0 && foodNotFully()){
+                    if(canSeeEnemy()){
                         walkTowardsHome();
                     }
                     else if(canSeeFood() && foodNotFully()){
@@ -238,7 +238,7 @@ public class QueenAnt extends Creature
                 }
             }
         }
-        else if(canSeeEnemy() || !foodNotFully() || getHomeHill().getFood() > 0){
+        else if(canSeeEnemy() || !foodNotFully()){
             walkTowardsHome();
         }
         else if(canSeeFood()){
@@ -264,34 +264,41 @@ public class QueenAnt extends Creature
 
     public void walkTowardsPheromone()
     {
-        Pheromone ph = (Pheromone)getOneIntersectingObject(Pheromone.class);
-        if (ph != null) {
-            if(n != 0) {
-                headTowards(phX / n, phY / n);
-                purposefulWalk();
-            }
+        phX = 0;
+        phY = 0;
+        n = 0;
 
-            if (n != 0 || ph.getX() == getX() && ph.getY() == getY()) {
-                phX = 0;
-                phY = 0;
-                n = 0;
+        int sumOfIntensity = 0;
+        for(Pheromone pheromone : getIntersectingObjects(Pheromone.class)){
+            int rot = getRotation();
+            turnTowards(pheromone.getX(), pheromone.getY());
+            int rotToPh = getRotation();
+            setRotation(rot);
+            if (Math.abs(rot - rotToPh) <= 90 || Math.abs(rot - rotToPh) > 270) {
+                sumOfIntensity += pheromone.getIntensity();
+            }
+        }
 
-                for(Pheromone pheromone : getIntersectingObjects(Pheromone.class)){
-                    int rot = getRotation();
-                    turnTowards(pheromone.getX(), pheromone.getY());
-                    int rotToPh = getRotation();
-                    setRotation(rot);
-                    if (Math.abs(rot - rotToPh) <= 90 || Math.abs(rot - rotToPh) > 270) {
-                        phX += pheromone.getX();
-                        phY += pheromone.getY();
-                        n++;
-                    }
-                }
+        for(Pheromone pheromone : getIntersectingObjects(Pheromone.class)){
+            //if(!intersects(pheromone)) {
+            int rot = getRotation();
+            turnTowards(pheromone.getX(), pheromone.getY());
+            int rotToPh = getRotation();
+            setRotation(rot);
+            if (Math.abs(rot - rotToPh) <= 90 || Math.abs(rot - rotToPh) > 270) {
+                n++;
+                phX += (int)(pheromone.getX() * ((double)pheromone.getIntensity() / sumOfIntensity));
+                phY += (int)(pheromone.getY() * ((double)pheromone.getIntensity() / sumOfIntensity));
             }
-            else{
-                headTowards(ph);
-                purposefulWalk();
-            }
+            //}
+        }
+
+        if(n != 0) {
+            headTowards(phX, phY);
+            purposefulWalk();
+        }
+        else{
+            randomWalk();
         }
     }
 
@@ -336,7 +343,11 @@ public class QueenAnt extends Creature
     Block targetBlock;
     private void inHome(){
         myTarget = null;
-        if(newEgg != null && !intersects(newEgg) && getFood() > 1 && isQueen) {
+
+        if(isCarryingGround){
+            myTarget = getHomeHill();
+        }
+        else if(newEgg != null && !intersects(newEgg) && getFood() > 1 && isQueen) {
             myTarget = newEgg;
         }
         else {
@@ -351,10 +362,6 @@ public class QueenAnt extends Creature
                     myTarget = getHomeHill();
                 }
             }
-        }
-
-        if(isCarryingGround){
-            myTarget = getHomeHill();
         }
 
         if(touchingBlock!=null && touchingBlock.canDig(this) && canDig && !isCarryingGround){

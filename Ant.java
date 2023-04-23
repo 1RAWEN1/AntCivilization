@@ -39,12 +39,18 @@ public class Ant extends Creature
     private void setVariables(){
         if(profession != 2){
             setHp(3);
+
+            setFood(3);
         }
         else{
             setHp(6);
+
+            setHpStep(400);
+            setFoodStep(800);
+            dSteps = 100;
+
+            setFood(6);
         }
-        
-        setFood(3);
     }
 
     public void act()
@@ -53,45 +59,35 @@ public class Ant extends Creature
         dTimer.calculate();
         updateVariables();
         searchForEnemies();
-        if(!participateInBattle){
+        if(!participateInBattle) {
             doTrophallaxis();
-        }
-        if(!isUnderGround()){
-            if(!participateInBattle) {
+            if (!isUnderGround()) {
                 if (profession == 1) {
                     if (isCarryingFood) {
                         walkTowardsHome();
                         handlePheromoneDrop();
-                    }
-                    else if(isCarryingBigFood){
+                    } else if (isCarryingBigFood) {
                         walkTowardsHome();
 
-                        Food food = (Food)getOneIntersectingObject(Food.class);
+                        Food food = (Food) getOneIntersectingObject(Food.class);
 
-                        if(food != null) {
+                        if (food != null) {
                             handlePheromoneDrop(food.getCrumbs() * 15);
                         }
-                    }
-                    else {
+                    } else {
                         searchForFood();
                     }
                 } else if (profession == 2) {
                     randomWalk();
-                }
-                else if(profession == 3){
+                } else if (profession == 3) {
                     walkTowardsHome();
                 }
-            }
-        }
-        else{
-            if(!participateInBattle && profession != 2) {
-                if (profession != 3) {
-                    inHome();
-                } else {
+            } else {
+                if (profession == 1) {
+                        inHome();
+                } else if(profession == 3){
                     nurse();
-                }
-            }
-            else if(profession==2){
+                } else{
                 /*if(canSeeEnemy()){
                     myTarget=enemy;
                     attack();
@@ -100,20 +96,19 @@ public class Ant extends Creature
                     }
                 }
                 else */
-                if(isTouching(AntHill.class)){
-                    boolean add = true;
-                    for (AntHill checkedHill : checkedHills) {
-                        if (getOneIntersectingObject(AntHill.class) == checkedHill) {
-                            add = false;
-                            break;
+                    if (isTouching(AntHill.class)) {
+                        boolean add = true;
+                        for (AntHill checkedHill : checkedHills) {
+                            if (getOneIntersectingObject(AntHill.class) == checkedHill) {
+                                add = false;
+                                break;
+                            }
+                        }
+                        if (add) {
+                            checkedHills.add((AntHill) getOneIntersectingObject(AntHill.class));
                         }
                     }
-                    if(add){
-                        checkedHills.add((AntHill)getOneIntersectingObject(AntHill.class));
-                    }
-                }
 
-                if(!participateInBattle){
                     inHome();
                 }
             }
@@ -185,9 +180,9 @@ public class Ant extends Creature
     }
     
     private final SimpleTimer dTimer=new SimpleTimer();
-    private final int dSteps = 50;
+    private int dSteps = 50;
 
-    boolean participateInBattle;
+
     private void searchForEnemies(){
         participateInBattle = false;
         if(canSeeEnemy()){
@@ -203,6 +198,7 @@ public class Ant extends Creature
             attack();
         }
         else if(smellAttackPheromone()){
+            participateInBattle = true;
             walkTowardsAttackPheromone();
         }
         else if(foodNotFully() && canSeeFood() && profession==2){
@@ -267,7 +263,7 @@ public class Ant extends Creature
                     setHp1(6 + (level / 5));
                 }
 
-                enemy.damage(1 + (level / 5));
+                enemy.damage(2 + (level / 5));
                 //enemy.setImpulse(1+(level/5), getRotation());
             }
             else{
@@ -294,13 +290,13 @@ public class Ant extends Creature
     
     private AttackPheromone ap;
     
-    private final int startAPheromoneValue = 300;
+    private final int startAPheromoneValue = 500;
     private void dropAttackPheromone(){
         if(ap!=null && ap.getWorld()==null){
             ap=null;
         }
         if(ap==null || !intersects(ap)){
-            ap=new AttackPheromone((startAPheromoneValue + profession == 2 ? level * 20 : 0), 250);
+            ap=new AttackPheromone(startAPheromoneValue + (profession == 2 ? level * 20 : 0), 250);
             getWorld().addObject(ap, getX(), getY());
         }
     }
@@ -311,7 +307,7 @@ public class Ant extends Creature
         enemy=null;
         for(int i = 0; i<getObjectsInRange(viewingRadius, Live.class).size(); i++){
             crInRadius=getObjectsInRange(viewingRadius, Live.class).get(i);
-            if(crInRadius.getHomeHill().getTeam()!=getHomeHill().getTeam() && canInteract(crInRadius)){
+            if(crInRadius.getHomeHill().getTeam()!=getHomeHill().getTeam() && canInteract(crInRadius) && !isFly()){
                 enemy=crInRadius;
             }
         }
@@ -376,12 +372,12 @@ public class Ant extends Creature
                 break;
             }
         }
-        if(foodNotFully() && getObjectsInRange(viewingRadius,TakenFood.class).size() > 0){
-            myTarget = getObjectsInRange(viewingRadius,TakenFood.class).get(0);
-        }
 
         if(isCarryingGround){
             myTarget = getHomeHill();
+        }
+        else if(foodNotFully() && getObjectsInRange(viewingRadius,TakenFood.class).size() > 0){
+            myTarget = getObjectsInRange(viewingRadius,TakenFood.class).get(0);
         }
 
         if(touchingBlock!=null && touchingBlock.canDig(this) && canDig && !isCarryingGround){
@@ -437,7 +433,7 @@ public class Ant extends Creature
 
     public void doTrophallaxis(){
         for(Creature ant : getObjectsInRange(viewingRadius, Creature.class)){
-            if(ant.getHomeHill().getTeam() == getHomeHill().getTeam() && ant.getFood() - 1 > getFood() && ant.getFoodPersent() > getFoodPersent() && canInteract(ant)){
+            if(ant.getHomeHill().getTeam() == getHomeHill().getTeam() && Math.abs(ant.getFood() - getFood()) > 1 && ant.getFoodPersent() > getFoodPersent() && canInteract(ant)){
                 if(!intersects(ant)) {
                     headTowards(ant);
                     purposefulWalk();
@@ -484,7 +480,7 @@ public class Ant extends Creature
     public void transportFood(){
         if(calculateDistToHome() < viewingRadius && profession == 3 && myTarget != touchingBlock && !isCarryingGround) {
             TakenFood takenfood = (TakenFood) getOneIntersectingObject(TakenFood.class);
-            if (takenfood != null) {
+            if (takenfood != null && takenfood.underGround) {
                 take(takenfood);
                 tf = takenfood;
                 tf.put();
@@ -507,10 +503,13 @@ public class Ant extends Creature
 
     Block targetBlock;
     private void inHome(){
-        if(myTarget==null){
-            myTarget=getHomeHill();
+        if(isCarryingGround){
+            myTarget = getHomeHill();
         }
-        if(foodNotFully() && getObjectsInRange(viewingRadius,TakenFood.class).size()>0){
+        else if(isCarryingFood){
+            myTarget=null;
+        }
+        else if(foodNotFully() && getObjectsInRange(viewingRadius,TakenFood.class).size()>0){
             myTarget=getObjectsInRange(viewingRadius,TakenFood.class).get(0);
         }
         else if(foodNotFully() && getHomeHill().getFood() > 0){
@@ -518,17 +517,6 @@ public class Ant extends Creature
         }
         else{
             myTarget=getHomeHill();
-        }
-        if(isCarryingFood){
-            /*if(getObjectsInRange(radius,TakenFood.class).size()>0){
-                myTarget=getObjectsInRange(radius,TakenFood.class).get(0);
-            }
-            else{*/
-                myTarget=null;
-            //}
-        }
-        if(isCarryingGround){
-            myTarget = getHomeHill();
         }
 
         if(touchingBlock!=null && touchingBlock.canDig(this) && canDig && !isCarryingGround){
@@ -656,7 +644,7 @@ public class Ant extends Creature
     {
         if (lastPh == null || lastPh.getWorld() == null || (int)Math.sqrt(Math.pow(lastPh.getX() - getX(), 2) + Math.pow(lastPh.getY() - getY(), 2)) > pheromoneValue / 10) {
             if(lastPh == null){
-                time = (int)(calculateDistToHome() * 1.5);
+                time = (int)(calculateDistToHome() * 2.0);
             }
             lastPh = new Pheromone(pheromoneValue, time);
             getWorld().addObject(lastPh, getX(), getY());
@@ -682,43 +670,43 @@ public class Ant extends Creature
     private int phX;
     private int phY;
     private int n;
-
     public void walkTowardsPheromone()
     {
-        Pheromone ph = (Pheromone)getOneIntersectingObject(Pheromone.class);
-        if (ph != null) {
-            if(n != 0) {
-                headTowards(phX / n, phY / n);
-                purposefulWalk();
+        phX = 0;
+        phY = 0;
+        n = 0;
+
+        int sumOfIntensity = 0;
+        for(Pheromone pheromone : getIntersectingObjects(Pheromone.class)){
+            int rot = getRotation();
+            turnTowards(pheromone.getX(), pheromone.getY());
+            int rotToPh = getRotation();
+            setRotation(rot);
+            if (Math.abs(rot - rotToPh) <= 90 || Math.abs(rot - rotToPh) > 270) {
+                sumOfIntensity += pheromone.getIntensity();
             }
+        }
 
-            if (n != 0 || ph.getX() == getX() && ph.getY() == getY()) {
-                phX = 0;
-                phY = 0;
-                n = 0;
-
-                for(Pheromone pheromone : getIntersectingObjects(Pheromone.class)){
-                    //if(!intersects(pheromone)) {
-                        int rot = getRotation();
-                        turnTowards(pheromone.getX(), pheromone.getY());
-                        int rotToPh = getRotation();
-                        setRotation(rot);
-                        if (Math.abs(rot - rotToPh) <= 90 || Math.abs(rot - rotToPh) > 270) {
-                            phX += pheromone.getX();
-                            phY += pheromone.getY();
-                            n++;
-                        }
-                    //}
+        for(Pheromone pheromone : getIntersectingObjects(Pheromone.class)){
+            //if(!intersects(pheromone)) {
+                int rot = getRotation();
+                turnTowards(pheromone.getX(), pheromone.getY());
+                int rotToPh = getRotation();
+                setRotation(rot);
+                if (Math.abs(rot - rotToPh) <= 90 || Math.abs(rot - rotToPh) > 270) {
+                    n++;
+                    phX += (int)(pheromone.getX() * ((double)pheromone.getIntensity() / sumOfIntensity));
+                    phY += (int)(pheromone.getY() * ((double)pheromone.getIntensity() / sumOfIntensity));
                 }
+            //}
+        }
 
-                if(n == 0){
-                    setRotation(Greenfoot.getRandomNumber(360));
-                }
-            }
-            else{
-                headTowards(ph);
-                purposefulWalk();
-            }
+        if(n != 0) {
+            headTowards(phX, phY);
+            purposefulWalk();
+        }
+        else{
+            randomWalk();
         }
     }
     

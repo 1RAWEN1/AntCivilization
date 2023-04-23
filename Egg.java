@@ -29,7 +29,12 @@ public class Egg extends Live
         }
 
         if(!royalEgg) {
-            setFood(3, 1);
+            if(profession == 1) {
+                setFood(3, 1);
+            }
+            else{
+                setFood(6, 1);
+            }
         }
         else{
             setFood(10, 1);

@@ -10,6 +10,7 @@ public class Prince extends Creature
 {
     private final int viewingRadius = 60;
     public Prince(AntHill home){
+        setMAX_AGE(1000);
         setRotation(180);
         setHomeHill(home);
 
@@ -252,7 +253,7 @@ public class Prince extends Creature
     }
 
     private void die(){
-        if(hp <= 0 || food <= 0){
+        if(hp <= 0 || food <= 0 || grow()){
             if(food > 0){
                 getWorld().addObject(new Food(food, 2, 1), getX(), getY());
             }

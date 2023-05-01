@@ -43,6 +43,7 @@ public class Ant extends Creature
             setFood(3);
         }
         else{
+            setMAX_AGE(8000);
             setHp(6);
 
             setHpStep(400);
@@ -759,7 +760,7 @@ public class Ant extends Creature
     }
     
     private void die(){
-        if(food<=0 || hp<=0){
+        if(food<=0 || hp<=0 || grow()){
             if(tf!=null && tf.getWorld()!=null){
                 putObject();
             }

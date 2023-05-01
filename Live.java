@@ -128,7 +128,23 @@ public class Live extends Actor
             getWorld().removeObject(this);
         }
     }
-    
+
+    private int MAX_AGE = 10000;
+    private SimpleTimer ageTimer = new SimpleTimer();
+
+    public int getMAX_AGE() {
+        return MAX_AGE;
+    }
+
+    public void setMAX_AGE(int MAX_AGE) {
+        this.MAX_AGE = MAX_AGE;
+    }
+
+    public boolean grow(){
+        ageTimer.calculate();
+        return ageTimer.getTime() > MAX_AGE;
+    }
+
     private int foodStep=1000;
     public void eatFood(){
         foodTimer.calculate();

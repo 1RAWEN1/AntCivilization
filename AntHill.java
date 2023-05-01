@@ -17,7 +17,7 @@ public class AntHill extends Actor
 
     private int nurses = 0;
     
-    private final int maxAnts = 35;
+    private final int maxAnts = 20;
 
     private Counter foodCounter;
     

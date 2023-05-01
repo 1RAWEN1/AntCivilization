@@ -71,7 +71,7 @@ public class Block extends UndergroundObs
     }
 
     private int timer = 0;
-    private int step = 200;
+    private int step = 500;
 
     private boolean start = true;
     private int step1 = 0;

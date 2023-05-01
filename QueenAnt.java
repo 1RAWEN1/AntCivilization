@@ -11,6 +11,7 @@ public class QueenAnt extends Creature
     boolean isQueen = true;
     private final int viewingRadius = 60;
     public QueenAnt(AntHill home){
+        setMAX_AGE(100000);
         setRotation(180);
         setHomeHill(home);
         
@@ -238,7 +239,7 @@ public class QueenAnt extends Creature
                 }
             }
         }
-        else if(canSeeEnemy() || !foodNotFully()){
+        else if(canSeeEnemy() || !foodNotFully() || calculateDistToHome() < viewingRadius && getHomeHill().getFood() > 0){
             walkTowardsHome();
         }
         else if(canSeeFood()){
@@ -457,7 +458,7 @@ public class QueenAnt extends Creature
     }
     
     private void die(){
-        if(hp <= 0 || food <= 0){
+        if(hp <= 0 || food <= 0 || grow()){
             if(food > 0){
                 getWorld().addObject(new Food(food, 2, 1), getX(), getY());
             }
